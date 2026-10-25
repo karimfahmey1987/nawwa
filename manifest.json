@@ -1,0 +1,18 @@
+{
+  "name": "Nawwa | نواة",
+  "short_name": "Nawwa",
+  "description": "Plant tiny 2-minute seeds across your 6 pillars of life, talk with your AI voice coach, and grow together on the Champion Board.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b1528",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2310b981'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='120' height='120' rx='28' fill='url(%23g)'/%3E%3Cpath d='M60 88V48M60 48C60 32 78 26 86 34C86 48 72 54 60 48ZM60 58C60 44 42 38 34 46C34 60 48 64 60 58Z' stroke='%23fff' stroke-width='8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#10b981" />
+  <title>Nawwa | نواة — Tiny Seeds, Big Life</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2310b981'/%3E%3Ctext x='60' y='82' font-size='70' text-anchor='middle'%3E🌱%3C/text%3E%3C/svg%3E" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <!-- Toast Alerts & Confetti Celebration Layer -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+  <div id="confetti-container" class="confetti-container" aria-hidden="true"></div>
+
+  <!-- Top Sticky Header -->
+  <header class="top-header">
+    <div class="header-inner">
+      <div class="brand-box">
+        <div class="brand-logo">🌱</div>
+        <div>
+          <span id="ui-app-name" class="brand-title">Nawwa | نواة</span>
+          <span id="ui-app-tagline" class="brand-subtitle">Plant a Tiny Seed • Grow Every Day</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btn-sos" class="sos-btn" type="button">
+          <span>🚨</span>
+          <span id="ui-sos-btn">SOS Rescue</span>
+        </button>
+        <button id="btn-voice-toggle" class="icon-btn active-toggle" type="button" title="Toggle Voice Speech">
+          <span id="voice-icon">🔊</span>
+          <span id="ui-voice-label">Voice On</span>
+        </button>
+        <button id="btn-theme-toggle" class="icon-btn" type="button" title="Toggle Dark/Light Theme">
+          <span id="theme-icon">☀️</span>
+        </button>
+        <button id="btn-lang-toggle" class="icon-btn" type="button">
+          <span>🌐</span>
+          <span id="ui-lang-toggle">عربي</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Shell -->
+  <main class="app-shell">
+    <!-- Momentum & Status Hero Banner -->
+    <section class="momentum-banner">
+      <div class="momentum-top">
+        <div class="greeting-text">
+          <h2 id="ui-greeting">Good morning, Champion!</h2>
+          <p id="ui-momentum-subtitle">Remember: Action creates motivation. Pick any Bronze step to start!</p>
+        </div>
+        <div class="stats-pills">
+          <div class="stat-pill pts">
+            <span>💎</span>
+            <span id="stat-points">120</span>
+            <span id="ui-points-label">Points</span>
+          </div>
+          <div class="stat-pill streak">
+            <span>🔥</span>
+            <span id="stat-streak">5</span>
+            <span id="ui-streak-label">Day Streak</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-labels">
+          <span id="ui-daily-progress">Today's Habit Momentum</span>
+          <span id="stat-progress-text">0 / 0</span>
+        </div>
+        <div class="progress-track">
+          <div id="stat-progress-bar" class="progress-fill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- 7-Day Weekly Seed Momentum Heatmap Strip -->
+      <div class="weekly-strip-wrap">
+        <span id="ui-weekly-momentum-title" class="weekly-strip-label">7-Day Seed Momentum</span>
+        <div id="weekly-momentum-strip" class="weekly-strip-days"></div>
+      </div>
+
+      <div class="energy-bar">
+        <div class="energy-bar-label">
+          <span>🔋</span>
+          <span id="ui-low-energy-status">Feeling overwhelmed or exhausted today?</span>
+        </div>
+        <button id="btn-low-energy-toggle" class="btn-secondary" type="button">
+          <span id="ui-low-energy-btn">Switch Today to Bronze Mode</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 1: TODAY'S PILLARS & HABITS -->
+    <section id="tab-today" class="tab-panel">
+      <!-- Anti-Overwhelm "Just 1 Seed Now" Spotlight Card -->
+      <div id="one-seed-spotlight" class="spotlight-card"></div>
+
+      <div class="section-header">
+        <h3 class="section-title">
+          <span>🌱</span>
+          <span id="ui-active-pillars-title">My Active Life Pillars</span>
+        </h3>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="btn-open-custom-pillar" class="btn-secondary" type="button">
+            <span id="ui-add-custom-pillar">+ Custom Pillar</span>
+          </button>
+          <button id="btn-jump-pillars" class="btn-secondary" type="button">
+            <span id="ui-manage-pillars">Choose Pillars</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 1-Tap Pillar Filter Chips -->
+      <div id="pillar-filter-bar" class="pillar-filter-bar"></div>
+
+      <div id="pillars-container"></div>
+    </section>
+
+    <!-- TAB 2: 2-WAY VOICE & AI COACH -->
+    <section id="tab-coach" class="tab-panel hidden">
+      <div class="coach-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap;">
+          <div>
+            <h3 class="section-title" style="margin-bottom: 4px;">
+              <span>🎙️</span>
+              <span id="ui-coach-title">2-Way Voice & AI Life Coach</span>
+            </h3>
+            <p id="ui-coach-subtitle" style="font-size: 0.84rem; color: var(--text-muted);">
+              Real AI conversation — pick your spoken dialect below, tap the mic, and talk naturally!
+            </p>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button id="btn-stop-speaking" class="icon-btn" type="button" title="Stop Voice Playback">
+              ⏹️ <span id="ui-stop-speaking">Stop Voice</span>
+            </button>
+            <button id="btn-clear-chat" class="icon-btn" type="button" title="Start New Chat">
+              🔄 <span id="ui-clear-chat">New Chat</span>
+            </button>
+            <button id="btn-toggle-ai-settings" class="icon-btn" type="button">
+              ⚙️ <span id="ui-ai-settings-btn">Voice & AI Settings</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Collapsible Voice & AI Brain Settings -->
+        <div id="ai-settings-panel" class="hidden" style="margin-top: 12px; padding: 14px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">
+                🔊 Voice Output Engine (محرك النطق الصوتي)
+              </label>
+              <select id="select-tts-engine" class="text-input" style="width: 100%;">
+                <option value="cloud">Cloud Neural Voice (Natural AR & EN)</option>
+                <option value="browser">Device / Browser System Voice</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">
+                ⚡ Speech Speed (سرعة التحدث)
+              </label>
+              <select id="select-tts-rate" class="text-input" style="width: 100%;">
+                <option value="0.9">0.9x (Calm / هادئ)</option>
+                <option value="1.0" selected>1.0x (Natural / طبيعي)</option>
+                <option value="1.15">1.15x (Energetic / سريع)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top: 8px;">
+            <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">
+              🧠 Optional: Google Gemini API Key or OpenAI/Groq Key (Built-in Free Cloud AI is active by default!)
+            </label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <input id="input-gemini-key" type="password" class="text-input" placeholder="Optional Gemini API Key (AIza...)" style="flex: 1;" />
+              <input id="input-openai-key" type="password" class="text-input" placeholder="Optional OpenAI / Groq Key (sk-... / gsk_...)" style="flex: 1;" />
+              <button id="btn-save-ai-config" type="button" class="btn-primary">Save</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="voice-orb-container">
+          <!-- Microphone Speech Recognition Dialect Selector -->
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 14px;">
+            <button type="button" class="icon-btn mic-lang-btn active-toggle" data-miclang="ar-EG">
+              🇪🇬 عربي (مصر)
+            </button>
+            <button type="button" class="icon-btn mic-lang-btn" data-miclang="ar-SA">
+              🇸🇦 عربي (فصحى/الخليج)
+            </button>
+            <button type="button" class="icon-btn mic-lang-btn" data-miclang="en-US">
+              🇺🇸 English (US)
+            </button>
+          </div>
+
+          <button id="btn-mic-orb" class="voice-orb" type="button" aria-label="Speak with Coach">
+            🎙️
+          </button>
+          <p id="ui-mic-status" style="margin-top: 10px; font-weight: 700; font-size: 0.88rem; color: var(--green-400);">
+            Tap Mic to Speak
+          </p>
+
+          <!-- Live Interim Speech Transcript Box -->
+          <div id="live-transcript-box" class="hidden" style="margin-top: 10px; padding: 10px 14px; background: rgba(16, 185, 129, 0.14); border: 1px dashed var(--green-400); border-radius: 10px; max-width: 90%; font-size: 0.9rem; font-weight: 600;">
+            <span id="live-transcript-text">...</span>
+          </div>
+        </div>
+
+        <div id="quick-prompts-box" class="quick-prompts"></div>
+
+        <div id="chat-messages" class="chat-messages"></div>
+
+        <form id="chat-form" class="chat-input-row">
+          <input
+            id="chat-input"
+            type="text"
+            class="text-input"
+            placeholder="Tell me anything on your mind..."
+            autocomplete="off"
+          />
+          <button id="btn-chat-send" type="submit" class="btn-primary">
+            <span id="ui-send-btn">Send</span>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- TAB 3: SMART CALENDAR & NOTIFICATIONS -->
+    <section id="tab-calendar" class="tab-panel hidden">
+      <div class="pillar-card">
+        <div class="pillar-header" style="flex-wrap: wrap;">
+          <div>
+            <h3 class="section-title">
+              <span>📅</span>
+              <span id="ui-calendar-title">Smart Schedule & Calendar Sync</span>
+            </h3>
+            <p id="ui-calendar-subtitle" style="font-size: 0.82rem; color: var(--text-muted); margin-top: 3px;">
+              Time-block your habits, get browser/phone notifications, and export to Google or Phone Calendar.
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button id="btn-enable-notif" class="btn-primary" type="button">
+              <span>🔔</span>
+              <span id="ui-enable-notif">Enable Notifications</span>
+            </button>
+            <button id="btn-test-notif" class="btn-secondary" type="button">
+              <span>🔊</span>
+              <span id="ui-test-notif">Test Alert & Voice Now</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Add Schedule Event Form -->
+        <form id="form-add-event" style="margin: 16px 0; padding: 14px; background: var(--bg-input); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <h4 id="ui-add-event-title" style="font-size: 0.9rem; margin-bottom: 10px;">Schedule a Habit or Family Gathering</h4>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <input id="event-time-input" type="time" class="text-input" value="08:00" style="max-width: 135px;" required />
+            <input id="event-title-input" type="text" class="text-input" placeholder="Event title (e.g., Read 1 Page of Quran)" required />
+            <button type="submit" class="btn-primary">
+              <span id="ui-add-event-btn">Add to Schedule</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Scheduled Events List -->
+        <div id="calendar-events-list"></div>
+
+        <!-- Export to External Calendar -->
+        <div style="margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+          <button id="btn-export-ics" class="btn-secondary" type="button">
+            <span>📲</span>
+            <span id="ui-export-ics">Download .ICS (Phone / Apple / Outlook)</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: CHAMPION BOARD & PEER PRESSURE -->
+    <section id="tab-champions" class="tab-panel hidden">
+      <div class="pillar-card">
+        <h3 class="section-title">
+          <span>🏆</span>
+          <span id="ui-champions-title">Champion Board & Squad Accountability</span>
+        </h3>
+        <p id="ui-champions-subtitle" style="font-size: 0.83rem; color: var(--text-muted); margin-top: 4px;">
+          Positive peer pressure! Earn points (Bronze=10, Silver=25, Gold=50) and nudge your circle.
+        </p>
+
+        <!-- Squad Invite & Switcher -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; padding: 12px; background: var(--gradient-surface); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div>
+            <span id="ui-squad-code-label" style="font-size: 0.82rem; color: var(--text-muted);">Squad Invite Code:</span>
+            <strong id="squad-code-display" style="font-size: 1rem; color: var(--green-400); margin-inline-start: 6px;">NAWWA-77</strong>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button id="btn-copy-squad" class="btn-secondary" type="button">
+              <span>📋</span>
+              <span id="ui-copy-code">Copy Invite</span>
+            </button>
+            <button id="btn-join-squad" class="btn-secondary" type="button">
+              <span>🤝</span>
+              <span id="ui-join-squad">Join Another Squad</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Squad vs Global Toggle -->
+        <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+          <button id="btn-board-squad" class="btn-primary" type="button" style="flex: 1;">
+            <span id="ui-tab-squad">My Squad / Family Circle</span>
+          </button>
+          <button id="btn-board-global" class="btn-secondary" type="button" style="flex: 1;">
+            <span id="ui-tab-global">Global Champions</span>
+          </button>
+        </div>
+
+        <div id="leaderboard-container"></div>
+      </div>
+    </section>
+
+    <!-- TAB 5: PROFILE, ACCOUNT & PILLAR MANAGER -->
+    <section id="tab-profile" class="tab-panel hidden">
+      <div class="pillar-card">
+        <div class="pillar-header" style="flex-wrap: wrap;">
+          <div>
+            <h3 class="section-title">
+              <span>👤</span>
+              <span id="ui-profile-title">Account, Life Pillars & Settings</span>
+            </h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+              <span id="ui-signed-in-as">Signed in as</span>:
+              <strong id="profile-user-display" style="color: var(--green-400);">Karim</strong>
+              (<span id="profile-email-display">karim@nawwa.app</span>)
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button id="btn-open-onboarding" class="btn-primary" type="button">
+              🔑 <span id="ui-switch-account">Sign In / Switch Account</span>
+            </button>
+            <button id="btn-export-backup" class="btn-secondary" type="button">
+              💾 <span id="ui-export-backup">Export Backup</span>
+            </button>
+            <button id="btn-logout" class="btn-secondary" type="button" style="border-color: #fb7185; color: #fb7185;">
+              🚪 <span id="ui-logout-btn">Log Out</span>
+            </button>
+          </div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 16px 0;" />
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+          <h4 id="ui-select-pillars-heading" style="font-size: 0.96rem;">Toggle Your Active Life Pillars (1–6+)</h4>
+          <button id="btn-open-custom-pillar-2" class="btn-primary" type="button">
+            <span id="ui-add-custom-pillar-2">+ Custom Pillar</span>
+          </button>
+        </div>
+
+        <div id="profile-pillars-grid" class="pillar-select-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Tab Navigation -->
+  <nav class="bottom-nav" aria-label="Primary Navigation">
+    <div class="bottom-nav-inner">
+      <button class="nav-tab active" data-tab="today" type="button">
+        <span class="tab-icon">🎯</span>
+        <span id="ui-tab-today">Today</span>
+      </button>
+      <button class="nav-tab" data-tab="coach" type="button">
+        <span class="tab-icon">🎙️</span>
+        <span id="ui-tab-coach">Voice Coach</span>
+      </button>
+      <button class="nav-tab" data-tab="calendar" type="button">
+        <span class="tab-icon">📅</span>
+        <span id="ui-tab-calendar">Calendar</span>
+      </button>
+      <button class="nav-tab" data-tab="champions" type="button">
+        <span class="tab-icon">🏆</span>
+        <span id="ui-tab-champions">Champions</span>
+      </button>
+      <button class="nav-tab" data-tab="profile" type="button">
+        <span class="tab-icon">⚙️</span>
+        <span id="ui-tab-profile">Pillars & Me</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MODAL 1: SOS RESCUE MODE -->
+  <div id="sos-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 id="ui-sos-modal-title" style="font-size: 1.08rem; font-weight: 800; color: #fb7185;">
+          🚨 SOS Rescue Mode — Beat the Urge Now
+        </h3>
+        <button id="btn-close-sos" class="icon-btn" type="button">✕</button>
+      </div>
+
+      <!-- SOS Sub-tabs -->
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
+        <button class="btn-primary sos-subtab-btn" data-sostab="urge" type="button" style="flex: 1; font-size: 0.78rem;">
+          <span id="ui-sos-tab-urge">1. Surf Craving (3m)</span>
+        </button>
+        <button class="btn-secondary sos-subtab-btn" data-sostab="procrastinate" type="button" style="flex: 1; font-size: 0.78rem;">
+          <span id="ui-sos-tab-proc">2. Break Procrastination</span>
+        </button>
+        <button class="btn-secondary sos-subtab-btn" data-sostab="energy" type="button" style="flex: 1; font-size: 0.78rem;">
+          <span id="ui-sos-tab-energy">3. Low-Energy Reset</span>
+        </button>
+      </div>
+
+      <!-- SOS Panel 1: 3-Min Urge Surfing & Breathing -->
+      <div id="sos-panel-urge">
+        <p id="ui-urge-desc" style="font-size: 0.86rem; color: var(--text-muted); text-align: center;">
+          Most cravings (smoking, junk food, scrolling) peak and pass within 3 minutes. Breathe with the circle:
+        </p>
+        <div id="breathing-circle" class="breathing-circle">
+          <span id="breathing-cue">Inhale...</span>
+        </div>
+        <div style="text-align: center; margin-bottom: 14px;">
+          <div id="urge-timer-display" style="font-size: 2rem; font-weight: 800; color: var(--blue-400);">03:00</div>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 10px;">
+          <button id="btn-start-urge-timer" class="btn-primary" type="button">
+            <span id="ui-start-urge-timer">Start 3-Min Urge Surf</span>
+          </button>
+          <button id="btn-reset-urge-timer" class="btn-secondary" type="button">
+            <span id="ui-reset-urge-timer">Reset</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SOS Panel 2: Procrastination Breaker -->
+      <div id="sos-panel-procrastinate" class="hidden">
+        <p id="ui-proc-desc" style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 10px;">
+          We procrastinate when a task feels too big. What task are you avoiding right now?
+        </p>
+        <input id="proc-task-input" type="text" class="text-input" style="width: 100%; margin-bottom: 10px;" placeholder="e.g., Write project report / Start workout" />
+        <button id="btn-break-proc" class="btn-primary" type="button" style="width: 100%;">
+          <span id="ui-proc-generate-btn">Break Into 2-Min Micro-Step & Start 5-Min Timer</span>
+        </button>
+
+        <div id="proc-result-box" class="hidden" style="margin-top: 14px; padding: 14px; background: var(--gradient-surface); border-radius: var(--radius-md); border: 1px solid var(--green-400); text-align: center;">
+          <p id="proc-micro-step-text" style="font-weight: 700; font-size: 0.92rem; margin-bottom: 8px;"></p>
+          <div id="proc-timer-display" style="font-size: 2rem; font-weight: 800; color: var(--green-400);">05:00</div>
+        </div>
+      </div>
+
+      <!-- SOS Panel 3: Low-Energy Reset -->
+      <div id="sos-panel-energy" class="hidden" style="text-align: center; padding: 10px 0;">
+        <p id="ui-low-energy-sos-desc" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+          Bad day? Zero motivation? Do not quit! Activate Low-Energy Mode to focus ONLY on tiny 2-minute Bronze wins today.
+        </p>
+        <button id="btn-sos-activate-bronze" class="btn-primary" type="button" style="width: 100%;">
+          <span>🛡️</span>
+          <span id="ui-activate-bronze-now">Activate Guilt-Free Bronze Mode Now</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: CREATE CUSTOM PILLAR -->
+  <div id="custom-pillar-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 id="ui-custom-pillar-modal-title" style="font-size: 1.05rem; font-weight: 800;">
+          ✨ Create Your Own Custom Pillar
+        </h3>
+        <button id="btn-close-custom-pillar" class="icon-btn" type="button">✕</button>
+      </div>
+
+      <form id="form-custom-pillar" style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; gap: 8px;">
+          <input id="cp-icon" type="text" class="text-input" value="🌟" style="max-width: 70px; text-align: center; font-size: 1.3rem;" required />
+          <input id="cp-name-en" type="text" class="text-input" placeholder="Pillar Name (e.g., Reading / Coding)" required />
+        </div>
+        <input id="cp-name-ar" type="text" class="text-input" placeholder="اسم الركن بالعربية (اختياري - مثل: القراءة وتطوير الذات)" />
+        <input id="cp-habit-title" type="text" class="text-input" placeholder="Daily Habit Question / Title" required />
+        <input id="cp-bronze" type="text" class="text-input" placeholder="Bronze Step (2-min easy starter)" required />
+        <input id="cp-silver" type="text" class="text-input" placeholder="Silver Step (Normal daily goal)" required />
+        <input id="cp-gold" type="text" class="text-input" placeholder="Gold Step (High-energy goal)" required />
+        <input id="cp-unit" type="text" class="text-input" placeholder="Tracker Counter Unit (e.g., pages, mins, sessions)" value="mins" required />
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+          <button id="btn-cancel-custom-pillar" type="button" class="btn-secondary">Cancel</button>
+          <button type="submit" class="btn-primary">
+            <span id="ui-save-pillar-btn">Create Pillar</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: ACCOUNT SIGN-IN & PILLAR ONBOARDING -->
+  <div id="onboarding-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="font-size: 1.15rem; font-weight: 800;">
+          🌱 Nawwa | نواة — Login & Setup
+        </h3>
+        <div style="display: flex; gap: 6px;">
+          <button id="btn-onboarding-lang" class="icon-btn" type="button">🌐 عربي / EN</button>
+          <button id="btn-close-onboarding" class="icon-btn" type="button">✕</button>
+        </div>
+      </div>
+
+      <!-- Built-in Demo Credentials Info Box -->
+      <div style="margin-bottom: 14px; padding: 12px; background: var(--gradient-surface); border: 1px dashed var(--green-400); border-radius: var(--radius-md); font-size: 0.82rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <div>
+            <strong style="color: var(--green-400);">🔑 Default Demo Login Credentials:</strong>
+            <div style="margin-top: 3px; color: var(--text-main);">
+              Email: <code>karim@nawwa.app</code> &nbsp;|&nbsp; Password: <code>Nawwa2026!</code>
+            </div>
+          </div>
+          <button id="btn-fill-demo" type="button" class="mini-btn" style="border-color: var(--green-400); color: var(--green-400);">
+            ⚡ Auto-Fill Demo
+          </button>
+        </div>
+      </div>
+
+      <p id="onboarding-subtitle" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+        Sign in with the demo credentials above, or enter any new Name, Email & Password to create your own account:
+      </p>
+
+      <form id="form-onboarding" style="display: flex; flex-direction: column; gap: 10px;">
+        <input id="ob-name" type="text" class="text-input" placeholder="Your Name / اسمك" value="Karim" required />
+        <input id="ob-email" type="email" class="text-input" placeholder="Email / البريد الإلكتروني" value="karim@nawwa.app" required />
+        <input id="ob-password" type="password" class="text-input" placeholder="Password / كلمة المرور" value="Nawwa2026!" required />
+
+        <div style="margin-top: 6px;">
+          <strong style="font-size: 0.85rem;">Select Your Active Life Pillars (اختر أركان حياتك):</strong>
+          <div id="onboarding-pillars-list" class="pillar-select-grid"></div>
+        </div>
+
+        <button type="submit" class="btn-primary" style="width: 100%; padding: 12px; font-size: 0.96rem;">
+          <span id="ui-onboarding-submit">🚀 Sign In & Start My Journey</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
