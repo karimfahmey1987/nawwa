@@ -3,6 +3,7 @@ import {
   playTierSound,
   speakText,
   stopSpeaking,
+  unlockAudio,
   toggleVoiceRecognition,
   generateSmartCoachResponse
 } from './voice-audio.js';
@@ -18,6 +19,11 @@ import {
   openBrainGamesModal,
   closeBrainGamesModal
 } from './brain-games.js';
+import {
+  initPersonalizationWizard,
+  openPersonalizationWizard,
+  closePersonalizationWizard
+} from './onboarding-wizard.js';
 
 const STORAGE_KEY = 'better_me_state_v1';
 
@@ -89,7 +95,7 @@ function loadInitialState() {
         micLang: parsed.micLang || 'ar-EG',
         theme: parsed.theme || 'dark',
         voiceEnabled: parsed.voiceEnabled !== undefined ? parsed.voiceEnabled : true,
-        voiceSettings: parsed.voiceSettings || { engine: 'cloud', rate: 1.0 },
+        voiceSettings: parsed.voiceSettings || { engine: 'browser', rate: 1.0 },
         aiConfig: parsed.aiConfig || { geminiKey: '', openaiKey: '' },
         lowEnergyMode: Boolean(parsed.lowEnergyMode),
         activeTab: parsed.activeTab || 'today',
@@ -118,7 +124,7 @@ function loadInitialState() {
     micLang: 'ar-EG',
     theme: 'dark',
     voiceEnabled: true,
-    voiceSettings: { engine: 'cloud', rate: 1.0 },
+    voiceSettings: { engine: 'browser', rate: 1.0 },
     aiConfig: { geminiKey: '', openaiKey: '' },
     lowEnergyMode: false,
     activeTab: 'today',
@@ -560,6 +566,15 @@ function renderShellStrings() {
   setTxt('ui-cards-restart-btn', t('cardsRestartBtn'));
 
   setTxt('ui-sos-tab-brain', t('sosTabBrain'));
+
+  // Personalization Wizard Translations
+  setTxt('ui-wizard-title', t('wizardTitle'));
+  setTxt('ui-wizard-subtitle', t('wizardSubtitle'));
+  setTxt('ui-wizard-step1-prompt', t('wizardStep1Prompt'));
+  setTxt('ui-wizard-step2-prompt', t('wizardStep2Prompt'));
+  setTxt('ui-wizard-next-btn', t('wizardNextBtn'));
+  setTxt('ui-wizard-finish-btn', t('wizardFinishBtn'));
+  setTxt('ui-profile-repersonalize', t('repersonalizeBtn'));
 
   // Update PWA mobile install controls and status
   updatePwaInstallUi();
@@ -1062,10 +1077,33 @@ function renderCoachSection() {
   }
 
   state.chatHistory.forEach((msg) => {
-    const div = document.createElement('div');
-    div.className = `chat-bubble ${msg.sender === 'user' ? 'user' : 'coach'}`;
-    div.textContent = msg.text;
-    chatBox.appendChild(div);
+    if (msg.sender === 'user') {
+      const div = document.createElement('div');
+      div.className = 'chat-bubble user';
+      div.textContent = msg.text;
+      chatBox.appendChild(div);
+    } else {
+      const row = document.createElement('div');
+      row.className = 'chat-bubble-row';
+
+      const div = document.createElement('div');
+      div.className = 'chat-bubble coach';
+      div.textContent = msg.text;
+
+      const speakerBtn = document.createElement('button');
+      speakerBtn.type = 'button';
+      speakerBtn.className = 'btn-listen-bubble';
+      speakerBtn.title = state.lang === 'ar' ? 'استمع للرد الصوتي' : 'Listen aloud';
+      speakerBtn.innerHTML = '🔊';
+      speakerBtn.addEventListener('click', () => {
+        unlockAudio();
+        speakText(msg.text, state.lang, true, null, null, state.voiceSettings);
+      });
+
+      row.appendChild(div);
+      row.appendChild(speakerBtn);
+      chatBox.appendChild(row);
+    }
   });
 
   chatBox.scrollTop = chatBox.scrollHeight;
@@ -1519,6 +1557,7 @@ function initEvents() {
 
   // Voice toggle
   document.getElementById('btn-voice-toggle')?.addEventListener('click', () => {
+    unlockAudio();
     state.voiceEnabled = !state.voiceEnabled;
     if (!state.voiceEnabled) {
       stopSpeaking();
@@ -1624,6 +1663,7 @@ function initEvents() {
   const liveTxt = document.getElementById('live-transcript-text');
 
   orb?.addEventListener('click', () => {
+    unlockAudio();
     toggleVoiceRecognition({
       speechLang: state.micLang || (state.lang === 'ar' ? 'ar-EG' : 'en-US'),
       onInterim: (interimText) => {
@@ -1658,6 +1698,7 @@ function initEvents() {
 
   document.getElementById('chat-form')?.addEventListener('submit', (e) => {
     e.preventDefault();
+    unlockAudio();
     const input = document.getElementById('chat-input');
     if (!input || !input.value.trim()) return;
     const val = input.value;
@@ -1910,6 +1951,13 @@ function initEvents() {
         ? `👋 مرحباً بك يا ${foundUser.name}! (${foundUser.role === 'admin' ? 'مدير النظام' : 'عضو'})`
         : `👋 Welcome, ${foundUser.name}! (${foundUser.role === 'admin' ? 'Admin' : 'Member'})`
     );
+
+    // If first-time login (not yet personalized), open the Pillar Personalization Wizard!
+    if (!foundUser.personalized) {
+      setTimeout(() => {
+        openPersonalizationWizard();
+      }, 500);
+    }
   });
 
   document.getElementById('btn-toggle-login-pass')?.addEventListener('click', () => {
@@ -2147,12 +2195,26 @@ function initEvents() {
     t
   );
 
+  // Initialize Personalized Onboarding Wizard
+  initPersonalizationWizard(
+    () => state,
+    saveState,
+    renderAll,
+    showToast,
+    launchConfetti
+  );
+
+  document.getElementById('btn-profile-repersonalize')?.addEventListener('click', () => {
+    openPersonalizationWizard();
+  });
+
   // Close any open modal when clicking backdrop or pressing Escape
   document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
     backdrop.addEventListener('click', (e) => {
       if (e.target === backdrop) {
         if (backdrop.id === 'sos-modal') closeSosModal();
         else if (backdrop.id === 'brain-games-modal') closeBrainGamesModal();
+        else if (backdrop.id === 'personalization-modal') closePersonalizationWizard();
         else backdrop.classList.add('hidden');
       }
     });
@@ -2162,8 +2224,10 @@ function initEvents() {
     if (e.key === 'Escape') {
       closeSosModal();
       closeBrainGamesModal();
+      closePersonalizationWizard();
       document.getElementById('custom-pillar-modal')?.classList.add('hidden');
       document.getElementById('onboarding-modal')?.classList.add('hidden');
+      document.getElementById('personalization-modal')?.classList.add('hidden');
       document.getElementById('pwa-ios-modal')?.classList.add('hidden');
     }
   });
@@ -2189,6 +2253,13 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+
+    // If authenticated user hasn't completed personalized pillar selection, launch wizard
+    if (state.isAuthenticated && !state.currentUser?.personalized) {
+      setTimeout(() => {
+        openPersonalizationWizard();
+      }, 600);
     }
 
     // Automatically prompt mobile installation after gentle paint delay if opened in mobile browser

@@ -482,7 +482,10 @@
               <span>✓</span>
               <span id="ui-standalone-active">App Installed</span>
             </span>
-            <button id="btn-open-onboarding" class="btn-primary" type="button">
+            <button id="btn-profile-repersonalize" class="btn-primary" type="button" style="background: linear-gradient(135deg, #10b981, #0284c7);">
+              🎯 <span id="ui-profile-repersonalize">Personalize Pillars & Goals</span>
+            </button>
+            <button id="btn-open-onboarding" class="btn-secondary" type="button">
               🔑 <span id="ui-switch-account">Sign In / Switch Account</span>
             </button>
             <button id="btn-export-backup" class="btn-secondary" type="button">
@@ -694,52 +697,57 @@
     </div>
   </div>
 
-  <!-- MODAL 3: ACCOUNT SIGN-IN & PILLAR ONBOARDING -->
-  <div id="onboarding-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
-    <div class="modal-box">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <h3 style="font-size: 1.15rem; font-weight: 800;">
-          🌱 Nawwa | نواة — Login & Setup
-        </h3>
-        <div style="display: flex; gap: 6px;">
-          <button id="btn-onboarding-lang" class="icon-btn" type="button">🌐 عربي / EN</button>
-          <button id="btn-close-onboarding" class="icon-btn" type="button">✕</button>
+  <!-- MODAL 3: PERSONALIZED ONBOARDING & HABIT WIZARD -->
+  <div id="personalization-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-box wizard-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+            <span>🌱</span>
+            <span id="ui-wizard-title">Personalize Your Life Pillars</span>
+          </h3>
+          <p id="ui-wizard-subtitle" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+            Choose only what matters to you right now. You can adjust anytime!
+          </p>
         </div>
+        <button id="btn-close-personalization" class="icon-btn" type="button">✕</button>
       </div>
 
-      <!-- Built-in Demo Credentials Info Box -->
-      <div style="margin-bottom: 14px; padding: 12px; background: var(--gradient-surface); border: 1px dashed var(--green-400); border-radius: var(--radius-md); font-size: 0.82rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <div>
-            <strong style="color: var(--green-400);">🔑 Default Demo Login Credentials:</strong>
-            <div style="margin-top: 3px; color: var(--text-main);">
-              Email: <code>karim@nawwa.app</code> &nbsp;|&nbsp; Password: <code>Nawwa2026!</code>
-            </div>
-          </div>
-          <button id="btn-fill-demo" type="button" class="mini-btn" style="border-color: var(--green-400); color: var(--green-400);">
-            ⚡ Auto-Fill Demo
+      <!-- Step 1: Select Pillars -->
+      <div id="wizard-step-1">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <strong id="ui-wizard-step1-prompt" style="font-size: 0.9rem;">Step 1: Choose Your Active Pillars</strong>
+          <span id="wizard-selected-count" class="admin-badge" style="background: rgba(16,185,129,0.18); color: var(--green-400); border-color: rgba(16,185,129,0.4);">
+            0 of 6 selected
+          </span>
+        </div>
+
+        <div id="wizard-pillars-selection-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 18px;">
+          <!-- Populated dynamically by onboarding-wizard.js -->
+        </div>
+
+        <button id="btn-wizard-step1-next" class="btn-primary" type="button" style="width: 100%; padding: 12px; font-size: 0.95rem;">
+          <span id="ui-wizard-next-btn">Next: Personalize My Habits →</span>
+        </button>
+      </div>
+
+      <!-- Step 2: Personalized Questions for Selected Pillars -->
+      <div id="wizard-step-2" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <strong id="ui-wizard-step2-prompt" style="font-size: 0.9rem;">Step 2: Tailor Your Daily Routine</strong>
+          <button id="btn-wizard-step2-back" type="button" class="mini-btn">← Back</button>
+        </div>
+
+        <div id="wizard-questions-list">
+          <!-- Populated dynamically with questions for selected pillars only -->
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 18px;">
+          <button id="btn-wizard-finish" class="btn-primary" type="button" style="width: 100%; padding: 13px; font-size: 1rem;">
+            <span id="ui-wizard-finish-btn">🚀 Save & Launch My Personalized Plan</span>
           </button>
         </div>
       </div>
-
-      <p id="onboarding-subtitle" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-        Sign in with the demo credentials above, or enter any new Name, Email & Password to create your own account:
-      </p>
-
-      <form id="form-onboarding" style="display: flex; flex-direction: column; gap: 10px;">
-        <input id="ob-name" type="text" class="text-input" placeholder="Your Name / اسمك" value="Karim" required />
-        <input id="ob-email" type="email" class="text-input" placeholder="Email / البريد الإلكتروني" value="karim@nawwa.app" required />
-        <input id="ob-password" type="password" class="text-input" placeholder="Password / كلمة المرور" value="Nawwa2026!" required />
-
-        <div style="margin-top: 6px;">
-          <strong style="font-size: 0.85rem;">Select Your Active Life Pillars (اختر أركان حياتك):</strong>
-          <div id="onboarding-pillars-list" class="pillar-select-grid"></div>
-        </div>
-
-        <button type="submit" class="btn-primary" style="width: 100%; padding: 12px; font-size: 0.96rem;">
-          <span id="ui-onboarding-submit">🚀 Sign In & Start My Journey</span>
-        </button>
-      </form>
     </div>
   </div>
 

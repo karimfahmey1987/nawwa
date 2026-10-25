@@ -180,6 +180,13 @@ export const I18N = {
     cardsRestartBtn: "New Shuffle",
     brainRewardToast: "🧠 Brain workout complete! +{pts} Focus points added!",
     sosTabBrain: "4. Brain Gym (2m)",
+    wizardTitle: "Personalize Your Life Pillars",
+    wizardSubtitle: "Choose only what matters to you right now. You can adjust anytime!",
+    wizardStep1Prompt: "Step 1: Choose Your Active Pillars",
+    wizardStep2Prompt: "Step 2: Tailor Your Daily Routine",
+    wizardNextBtn: "Next: Personalize My Habits →",
+    wizardFinishBtn: "🚀 Save & Launch My Personalized Plan",
+    repersonalizeBtn: "Personalize Pillars & Goals",
     daysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
   },
   ar: {
@@ -363,6 +370,13 @@ export const I18N = {
     cardsRestartBtn: "خلط جديد",
     brainRewardToast: "🧠 تمرين ذهني ممتاز! تمت إضافة +{pts} نقطة للتركيز!",
     sosTabBrain: "٤. تنشيط العقل (٢د)",
+    wizardTitle: "تخصيص أركان حياتك وعاداتك",
+    wizardSubtitle: "اختر فقط ما يهمك الآن. يمكنك تعديل خياراتك في أي وقت!",
+    wizardStep1Prompt: "الخطوة الأولى: اختر أركانك النشطة",
+    wizardStep2Prompt: "الخطوة الثانية: تخصيص عاداتك اليومية",
+    wizardNextBtn: "التالي: تخصيص عاداتي ←",
+    wizardFinishBtn: "🚀 حفظ وإطلاق خطتي اليومية المخصصة",
+    repersonalizeBtn: "تخصيص أركاني وعاداتي",
     daysShort: ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"]
   }
 };

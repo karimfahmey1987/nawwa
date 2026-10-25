@@ -132,39 +132,86 @@ function cleanSpeechString(text) {
     .trim();
 }
 
-// Preload browser speechSynthesis voices immediately when available
+let activeUtterances = [];
+let cachedVoices = [];
+
+function loadVoices() {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  try {
+    cachedVoices = window.speechSynthesis.getVoices() || [];
+  } catch (_) {}
+}
+
 if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-  window.speechSynthesis.getVoices();
+  loadVoices();
   window.speechSynthesis.onvoiceschanged = () => {
-    window.speechSynthesis.getVoices();
+    loadVoices();
   };
 }
 
-// Rank available browser voices to avoid robotic espeak when better voices exist
+export function unlockAudio() {
+  getAudioCtx();
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    try {
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+    } catch (_) {}
+  }
+}
+
+// Rank available browser voices for natural tone
 export function getBestBrowserVoice(isAr) {
-  if (!('speechSynthesis' in window)) return null;
-  const voices = window.speechSynthesis.getVoices() || [];
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
+  const voices = cachedVoices.length ? cachedVoices : (window.speechSynthesis.getVoices() || []);
   if (!voices.length) return null;
 
   const langPrefix = isAr ? 'ar' : 'en';
-  const matching = voices.filter((v) => (v.lang || '').toLowerCase().startsWith(langPrefix));
+  let matching = voices.filter((v) => (v.lang || '').toLowerCase().startsWith(langPrefix));
+
+  if (isAr && !matching.length) {
+    matching = voices.filter((v) => {
+      const n = (v.name || '').toLowerCase();
+      return (
+        n.includes('arabic') ||
+        n.includes('arab') ||
+        n.includes('salma') ||
+        n.includes('tarik') ||
+        n.includes('maged') ||
+        n.includes('laila') ||
+        n.includes('mariam') ||
+        n.includes('hoda') ||
+        n.includes('shakir')
+      );
+    });
+  }
+
   if (!matching.length) return null;
 
-  // Score voices: prefer Google, Microsoft Natural/Online, Apple, and avoid espeak if possible
+  // Score voices
   const scored = matching.map((v) => {
     const name = (v.name || '').toLowerCase();
     let score = 0;
     if (name.includes('natural') || name.includes('online')) score += 50;
     if (name.includes('google')) score += 40;
     if (name.includes('microsoft')) score += 35;
-    if (name.includes('salma') || name.includes('shakir') || name.includes('hoda') || name.includes('aria') || name.includes('guy')) score += 25;
+    if (name.includes('apple') || name.includes('siri')) score += 30;
+    if (
+      name.includes('salma') ||
+      name.includes('shakir') ||
+      name.includes('hoda') ||
+      name.includes('aria') ||
+      name.includes('guy') ||
+      name.includes('samantha')
+    )
+      score += 25;
     if (!v.localService) score += 15;
-    if (name.includes('espeak')) score -= 50;
+    if (name.includes('espeak')) score -= 40;
     return { voice: v, score };
   });
 
   scored.sort((a, b) => b.score - a.score);
-  return scored[0].voice;
+  return scored[0]?.voice || matching[0] || null;
 }
 
 export function stopSpeaking() {
@@ -175,11 +222,15 @@ export function stopSpeaking() {
     } catch (_) {}
     currentAudioElement = null;
   }
-  if ('speechSynthesis' in window) {
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     try {
       window.speechSynthesis.cancel();
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
     } catch (_) {}
   }
+  activeUtterances = [];
 }
 
 // Split long text into natural sentence chunks for smooth playback
@@ -196,7 +247,6 @@ function splitIntoChunks(text, maxLen = 175) {
       if (s.length <= maxLen) {
         current = s;
       } else {
-        // Hard split long sentence by words
         const words = s.split(' ');
         let temp = '';
         for (const w of words) {
@@ -215,8 +265,8 @@ function splitIntoChunks(text, maxLen = 175) {
   return chunks.length ? chunks : [text];
 }
 
-// Natural Speech Output (Supports Cloud Neural Audio + High-Quality Browser TTS)
-export async function speakText(text, fallbackLang = 'en', voiceEnabled = true, onStart = null, onEnd = null, voiceSettings = {}) {
+// Natural Speech Output with zero-latency browser synthesis and anti-garbage collection
+export function speakText(text, fallbackLang = 'en', voiceEnabled = true, onStart = null, onEnd = null, voiceSettings = {}) {
   if (!voiceEnabled) {
     if (onEnd) onEnd();
     return;
@@ -229,60 +279,74 @@ export async function speakText(text, fallbackLang = 'en', voiceEnabled = true, 
   }
 
   stopSpeaking();
+  unlockAudio();
 
-  // Auto-detect language from the actual text being spoken!
-  const isAr = isArabicText(cleanText) || (fallbackLang === 'ar' && !/[a-zA-Z]{4,}/.test(cleanText));
-  const rate = Number(voiceSettings.rate) || 1.0;
-  const preferCloud = voiceSettings.engine !== 'browser';
-
-  const bestBrowserVoice = getBestBrowserVoice(isAr);
-  const browserVoiceIsRobotic =
-    !bestBrowserVoice || (bestBrowserVoice.name || '').toLowerCase().includes('espeak');
-
-  // If user selected Cloud Neural TTS or browser only has robotic espeak, try Cloud TTS stream first
-  if (preferCloud || browserVoiceIsRobotic) {
-    const worked = await tryCloudNeuralTTS(cleanText, isAr, rate, onStart, onEnd);
-    if (worked) return;
-  }
-
-  // Browser Web Speech Synthesis (with sentence chunking so Chrome never cuts off after 15 seconds)
-  if (!('speechSynthesis' in window)) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
     if (onEnd) onEnd();
     return;
   }
 
-  try {
-    const chunks = splitIntoChunks(cleanText, 180);
-    let idx = 0;
+  const isAr = isArabicText(cleanText) || (fallbackLang === 'ar' && !/[a-zA-Z]{4,}/.test(cleanText));
+  const rate = Number(voiceSettings.rate) || 1.0;
+  const bestVoice = getBestBrowserVoice(isAr);
 
-    const speakNext = () => {
+  try {
+    const chunks = splitIntoChunks(cleanText, 160);
+    let idx = 0;
+    activeUtterances = [];
+
+    const speakChunk = () => {
       if (idx >= chunks.length) {
         if (onEnd) onEnd();
+        activeUtterances = [];
         return;
       }
+
       const u = new SpeechSynthesisUtterance(chunks[idx]);
-      u.lang = isAr ? 'ar-SA' : 'en-US';
+      activeUtterances.push(u);
+
+      u.lang = isAr ? (bestVoice?.lang || 'ar-SA') : (bestVoice?.lang || 'en-US');
       u.rate = rate;
       u.pitch = 1.0;
-      if (bestBrowserVoice) {
-        u.voice = bestBrowserVoice;
-        u.lang = bestBrowserVoice.lang;
+      if (bestVoice) {
+        u.voice = bestVoice;
       }
+
       if (idx === 0 && onStart) {
-        u.onstart = onStart;
+        u.onstart = () => {
+          onStart();
+        };
       }
+
       u.onend = () => {
         idx++;
-        speakNext();
+        speakChunk();
       };
-      u.onerror = () => {
+
+      u.onerror = (err) => {
+        console.warn('SpeechSynthesis error event:', err);
+        idx++;
+        if (idx < chunks.length) {
+          speakChunk();
+        } else if (onEnd) {
+          onEnd();
+        }
+      };
+
+      try {
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+        window.speechSynthesis.speak(u);
+      } catch (err) {
+        console.warn('speechSynthesis.speak error:', err);
         if (onEnd) onEnd();
-      };
-      window.speechSynthesis.speak(u);
+      }
     };
 
-    speakNext();
-  } catch (_) {
+    speakChunk();
+  } catch (err) {
+    console.warn('speakText error:', err);
     if (onEnd) onEnd();
   }
 }
