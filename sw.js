@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nawwa-v7';
+const CACHE_NAME = 'nawwa-v8';
 const ASSETS = [
   './',
   './index.html',

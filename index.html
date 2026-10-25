@@ -14,8 +14,94 @@
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
   <div id="confetti-container" class="confetti-container" aria-hidden="true"></div>
 
-  <!-- Top Sticky Header -->
-  <header class="top-header">
+  <!-- WELCOME & SIGN-IN SCREEN (For New Users & Logged-Out Visitors) -->
+  <section id="welcome-screen" class="welcome-screen">
+    <div class="welcome-topbar">
+      <div class="brand-box">
+        <div class="brand-logo">🌱</div>
+        <div>
+          <span class="brand-title">Nawwa | نواة</span>
+          <span class="brand-subtitle" id="ui-welcome-tagline">Plant a Tiny Seed • Grow Every Day</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button id="btn-welcome-theme" class="icon-btn" type="button" title="Toggle Theme">☀️</button>
+        <button id="btn-welcome-lang" class="icon-btn" type="button">🌐 <span id="ui-welcome-lang">عربي</span></button>
+      </div>
+    </div>
+
+    <div class="welcome-grid">
+      <!-- Left Hero Showcase -->
+      <div class="welcome-hero-card">
+        <div>
+          <span style="font-size: 0.82rem; font-weight: 800; color: var(--green-400); letter-spacing: 0.05em; text-transform: uppercase;">
+            🌱 Welcome to Nawwa | أهلاً بك في نَوَاة
+          </span>
+          <h1 id="ui-welcome-hero-title" style="font-size: 1.6rem; font-weight: 800; margin: 10px 0 8px; line-height: 1.25;">
+            Plant a Tiny 2-Minute Seed. Transform Your Entire Life.
+          </h1>
+          <p id="ui-welcome-hero-desc" style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.5;">
+            Defeat procrastination, build spiritual & healthy habits across 6 life pillars, talk with your 2-way AI Voice Coach, and compete with your circle.
+          </p>
+
+          <div class="welcome-features-list">
+            <div class="welcome-feat-item"><span id="ui-welcome-feat1">🕌 6 Life Pillars & Quran Tracker</span></div>
+            <div class="welcome-feat-item"><span id="ui-welcome-feat2">🎙️ 2-Way Arabic & English AI Voice Coach</span></div>
+            <div class="welcome-feat-item"><span id="ui-welcome-feat3">🥉 Bronze / Silver / Gold Adaptive Goals</span></div>
+            <div class="welcome-feat-item"><span id="ui-welcome-feat4">🏆 Champion Board & Squad Peer Pressure</span></div>
+          </div>
+        </div>
+
+        <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border-color); font-size: 0.8rem; color: var(--text-muted);">
+          ✨ <em>"Action creates motivation, not the other way around."</em>
+        </div>
+      </div>
+
+      <!-- Right Login Card -->
+      <div class="login-card">
+        <div style="margin-bottom: 14px;">
+          <h2 id="ui-login-card-title" style="font-size: 1.25rem; font-weight: 800;">
+            Sign In to Your Account
+          </h2>
+          <p id="ui-login-admin-note" style="font-size: 0.8rem; color: #fb923c; margin-top: 4px; font-weight: 700;">
+            🔒 Invite-Only Platform: Only the Admin (Karim) can create new user accounts.
+          </p>
+        </div>
+
+        <form id="form-login" style="display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <label id="ui-login-email-label" style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">Email Address</label>
+            <input id="login-email" type="email" class="text-input" style="width: 100%;" placeholder="e.g. karim@nawwa.app" required value="karim@nawwa.app" />
+          </div>
+
+          <div>
+            <label id="ui-login-password-label" style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">Password</label>
+            <div style="position: relative;">
+              <input id="login-password" type="password" class="text-input" style="width: 100%; padding-inline-end: 42px;" placeholder="Enter password" required value="Nawwa2026!" />
+              <button id="btn-toggle-login-pass" type="button" class="mini-btn" style="position: absolute; inset-inline-end: 6px; top: 50%; transform: translateY(-50%); padding: 4px 8px; border: none; background: transparent; cursor: pointer;">👁️</button>
+            </div>
+          </div>
+
+          <div id="login-error-msg" class="hidden" style="color: #fb7185; font-size: 0.82rem; font-weight: 700; padding: 8px 12px; background: rgba(244,63,94,0.14); border-radius: 8px;"></div>
+
+          <button type="submit" class="btn-primary" style="padding: 12px; font-size: 0.96rem; margin-top: 4px;">
+            <span id="ui-login-btn">🚀 Sign In to Nawwa</span>
+          </button>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px;">
+            <button id="btn-quick-fill-admin" type="button" class="mini-btn" style="border-color: var(--gold-border); color: #facc15; font-size: 0.76rem;">
+              👑 Fill Admin Login (Karim)
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- AUTHENTICATED APPLICATION ROOT (Shown after successful login) -->
+  <div id="app-authenticated-root" class="hidden">
+    <!-- Top Sticky Header -->
+    <header class="top-header">
     <div class="header-inner">
       <div class="brand-box">
         <div class="brand-logo">🌱</div>
@@ -360,6 +446,46 @@
         </div>
 
         <div id="profile-pillars-grid" class="pillar-select-grid"></div>
+
+        <!-- 👑 ADMIN CONTROL PANEL (Visible ONLY when signed in as Admin) -->
+        <div id="admin-panel" class="hidden" style="margin-top: 24px; padding: 18px; background: var(--gradient-surface); border: 2px solid var(--gold-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <div>
+              <h3 style="font-size: 1.12rem; font-weight: 800; color: #facc15;">
+                <span id="ui-admin-panel-title">👑 Admin Control Center — User Management</span>
+              </h3>
+              <p id="ui-admin-panel-desc" style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">
+                You are signed in as Admin. Only you can create, view, or remove user accounts.
+              </p>
+            </div>
+            <span class="admin-badge" id="admin-user-count-badge">Total Users: 2</span>
+          </div>
+
+          <!-- Create User Form -->
+          <form id="form-admin-create-user" style="padding: 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 16px;">
+            <h4 id="ui-admin-create-title" style="font-size: 0.92rem; font-weight: 800; margin-bottom: 10px; color: var(--green-400);">
+              + Create a New User Account
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-bottom: 10px;">
+              <input id="admin-new-name" type="text" class="text-input" placeholder="Full Name (e.g. Omar)" required />
+              <input id="admin-new-email" type="email" class="text-input" placeholder="Email (e.g. omar@nawwa.app)" required />
+              <input id="admin-new-password" type="text" class="text-input" placeholder="Password (e.g. Omar2026!)" required />
+              <select id="admin-new-role" class="text-input">
+                <option value="user">🌱 Member (عضو)</option>
+                <option value="admin">👑 Admin (مدير)</option>
+              </select>
+            </div>
+            <button type="submit" class="btn-primary" style="padding: 9px 16px; font-size: 0.86rem;">
+              <span id="ui-admin-create-btn">+ Create User</span>
+            </button>
+          </form>
+
+          <!-- Registered Users Directory -->
+          <h4 id="ui-admin-users-list-title" style="font-size: 0.92rem; font-weight: 800; margin-bottom: 8px;">
+            Registered Users Directory
+          </h4>
+          <div id="admin-users-list"></div>
+        </div>
       </div>
     </section>
   </main>
@@ -389,6 +515,7 @@
       </button>
     </div>
   </nav>
+  </div><!-- /#app-authenticated-root -->
 
   <!-- MODAL 1: SOS RESCUE MODE -->
   <div id="sos-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">

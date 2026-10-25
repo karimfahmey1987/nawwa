@@ -110,6 +110,29 @@ export const I18N = {
     spotlightNextBtn: "🔀 Another Idea",
     spotlightAllDone: "🎉 Amazing! You completed all your active habits for today!",
     filterAll: "All Active",
+    welcomeHeroTitle: "Plant a Tiny 2-Minute Seed. Transform Your Entire Life.",
+    welcomeHeroDesc: "Defeat procrastination, build spiritual & healthy habits across 6 life pillars, talk with your 2-way AI Voice Coach, and compete with your circle.",
+    welcomeFeat1: "🕌 6 Life Pillars & Quran Tracker",
+    welcomeFeat2: "🎙️ 2-Way Arabic & English AI Voice Coach",
+    welcomeFeat3: "🥉 Bronze / Silver / Gold Adaptive Goals",
+    welcomeFeat4: "🏆 Champion Board & Squad Peer Pressure",
+    loginCardTitle: "Sign In to Your Account",
+    loginAdminOnlyNote: "🔒 Invite-Only Platform: Only the Admin can create new user accounts.",
+    loginEmailLabel: "Email Address",
+    loginPasswordLabel: "Password",
+    loginBtn: "🚀 Sign In to Nawwa",
+    loginErrorMsg: "❌ Invalid email or password. Please check your credentials or contact the Admin.",
+    adminPanelTitle: "👑 Admin Control Center — User Management",
+    adminPanelDesc: "You are signed in as Admin. Only you can create, view, or remove user accounts.",
+    adminCreateTitle: "Create a New User Account",
+    adminUserNamePh: "User's Full Name (e.g., Ahmed Ali)",
+    adminUserEmailPh: "User's Email (e.g., ahmed@nawwa.app)",
+    adminUserPassPh: "Assign Password (e.g., Ahmed2026!)",
+    adminCreateBtn: "+ Create User",
+    adminUsersListTitle: "Registered Users Directory",
+    adminCopyCreds: "Copy Login",
+    adminRoleBadge: "👑 Admin",
+    memberRoleBadge: "🌱 Member",
     daysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
   },
   ar: {
@@ -223,6 +246,29 @@ export const I18N = {
     spotlightNextBtn: "🔀 اقترح خطوة أخرى",
     spotlightAllDone: "🎉 ما شاء الله! أتممت جميع عاداتك النشطة لليوم بنجاح!",
     filterAll: "كل الأركان",
+    welcomeHeroTitle: "ازرع نواة صغيرة في دقيقتين.. وغيّر حياتك بالكامل.",
+    welcomeHeroDesc: "تغلّب على التسويف والكسل، وابنِ عاداتك الدينية والصحية عبر ٦ أركان للحياة، وتحدّث مع مدربك الصوتي الذكي، وتنافس مع عائلتك وأصدقائك.",
+    welcomeFeat1: "🕌 ٦ أركان للحياة ومتابعة ختمة القرآن الكريم",
+    welcomeFeat2: "🎙️ مدرب صوتي ذكي يتحدث بالعربية والإنجليزية",
+    welcomeFeat3: "🥉 أهداف مرنة (برونزي / فضي / ذهبي) بلا يأس",
+    welcomeFeat4: "🏆 لوحة الأبطال وتحدي العائلة والأصدقاء",
+    loginCardTitle: "تسجيل الدخول إلى حسابك",
+    loginAdminOnlyNote: "🔒 نظام خاص: إنشاء الحسابات الجديدة يتم حصرياً عن طريق مدير النظام (Admin).",
+    loginEmailLabel: "البريد الإلكتروني",
+    loginPasswordLabel: "كلمة المرور",
+    loginBtn: "🚀 تسجيل الدخول إلى نَوَاة",
+    loginErrorMsg: "❌ البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى التأكد من البيانات أو التواصل مع مدير النظام.",
+    adminPanelTitle: "👑 لوحة تحكم المدير (Admin) — إدارة المستخدمين",
+    adminPanelDesc: "أنت مسجّل الدخول بصلاحية مدير النظام. أنت الوحيد الذي يمكنه إنشاء حسابات جديدة للمستخدمين أو حذفها.",
+    adminCreateTitle: "إنشاء حساب مستخدم جديد",
+    adminUserNamePh: "الاسم الكامل للمستخدم (مثال: أحمد علي)",
+    adminUserEmailPh: "البريد الإلكتروني (مثال: ahmed@nawwa.app)",
+    adminUserPassPh: "تعيين كلمة المرور (مثال: Ahmed2026!)",
+    adminCreateBtn: "+ إنشاء الحساب",
+    adminUsersListTitle: "قائمة المستخدمين المسجلين",
+    adminCopyCreds: "نسخ بيانات الدخول",
+    adminRoleBadge: "👑 مدير النظام",
+    memberRoleBadge: "🌱 عضو",
     daysShort: ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"]
   }
 };
@@ -580,3 +626,25 @@ export const DEFAULT_CHAMPIONS = {
     }
   ]
 };
+
+export const DEFAULT_USERS = [
+  {
+    id: "user_karim",
+    name: "Karim",
+    email: "karim@nawwa.app",
+    password: "Nawwa2026!",
+    role: "admin",
+    points: 285,
+    streak: 6
+  },
+  {
+    id: "user_ahmed",
+    name: "Ahmed (Cousin)",
+    email: "ahmed@nawwa.app",
+    password: "Ahmed2026!",
+    role: "user",
+    points: 120,
+    streak: 3
+  }
+];
+

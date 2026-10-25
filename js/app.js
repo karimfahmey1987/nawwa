@@ -1,4 +1,4 @@
-import { I18N, DEFAULT_PILLARS, DEFAULT_EVENTS, DEFAULT_CHAMPIONS } from './data.js';
+import { I18N, DEFAULT_PILLARS, DEFAULT_EVENTS, DEFAULT_CHAMPIONS, DEFAULT_USERS } from './data.js';
 import {
   playTierSound,
   speakText,
@@ -67,6 +67,18 @@ function loadInitialState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      const users = Array.isArray(parsed.users) && parsed.users.length ? parsed.users : structuredClone(DEFAULT_USERS);
+      let karimUser = users.find(u => u.email.toLowerCase() === 'karim@nawwa.app');
+      if (!karimUser) {
+        karimUser = structuredClone(DEFAULT_USERS[0]);
+        users.unshift(karimUser);
+      } else {
+        karimUser.role = 'admin'; // Karim is always admin
+      }
+
+      const isAuthenticated = parsed.isAuthenticated !== undefined ? Boolean(parsed.isAuthenticated) : false;
+      const currentUser = parsed.currentUser || (isAuthenticated ? karimUser : null);
+
       const st = {
         lang: parsed.lang || 'en',
         micLang: parsed.micLang || 'ar-EG',
@@ -77,9 +89,12 @@ function loadInitialState() {
         lowEnergyMode: Boolean(parsed.lowEnergyMode),
         activeTab: parsed.activeTab || 'today',
         boardMode: parsed.boardMode || 'squad',
-        user: parsed.user || { name: 'Karim', email: 'karim@nawwa.app', onboarded: true },
-        points: typeof parsed.points === 'number' ? parsed.points : 285,
-        streak: typeof parsed.streak === 'number' ? parsed.streak : 6,
+        users: users,
+        currentUser: currentUser,
+        isAuthenticated: isAuthenticated,
+        user: currentUser || parsed.user || { name: 'Karim', email: 'karim@nawwa.app', role: 'admin', onboarded: true },
+        points: typeof parsed.points === 'number' ? parsed.points : (currentUser?.points || 285),
+        streak: typeof parsed.streak === 'number' ? parsed.streak : (currentUser?.streak || 6),
         lastActiveDate: parsed.lastActiveDate || todayIso,
         history: parsed.history || buildDefaultHistory(),
         pillars: Array.isArray(parsed.pillars) && parsed.pillars.length ? parsed.pillars : structuredClone(DEFAULT_PILLARS),
@@ -92,6 +107,7 @@ function loadInitialState() {
     }
   } catch (_) {}
 
+  const defaultUsers = structuredClone(DEFAULT_USERS);
   return {
     lang: 'en',
     micLang: 'ar-EG',
@@ -102,7 +118,10 @@ function loadInitialState() {
     lowEnergyMode: false,
     activeTab: 'today',
     boardMode: 'squad',
-    user: { name: 'Karim', email: 'karim@nawwa.app', onboarded: true },
+    users: defaultUsers,
+    currentUser: null,
+    isAuthenticated: false,
+    user: { name: 'Karim', email: 'karim@nawwa.app', role: 'admin', onboarded: true },
     points: 285,
     streak: 6,
     lastActiveDate: todayIso,
@@ -141,6 +160,15 @@ function saveState() {
   try {
     state.history = state.history || {};
     state.history[getTodayIso()] = Object.keys(state.completedToday || {}).length;
+    if (state.currentUser && Array.isArray(state.users)) {
+      const u = state.users.find(
+        (x) => x.id === state.currentUser.id || x.email.toLowerCase() === state.currentUser.email.toLowerCase()
+      );
+      if (u) {
+        u.points = state.points;
+        u.streak = state.streak;
+      }
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (_) {}
 }
@@ -190,10 +218,52 @@ function renderShellStrings() {
   document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
   document.documentElement.setAttribute('data-theme', state.theme);
 
+  // Toggle Welcome Landing Screen vs Authenticated Application Shell
+  const welcomeScreen = document.getElementById('welcome-screen');
+  const appRoot = document.getElementById('app-authenticated-root');
+
+  if (!state.isAuthenticated) {
+    if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+    if (appRoot) appRoot.classList.add('hidden');
+  } else {
+    if (welcomeScreen) welcomeScreen.classList.add('hidden');
+    if (appRoot) appRoot.classList.remove('hidden');
+  }
+
   const setTxt = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
   };
+
+  // Welcome Screen Strings
+  setTxt('ui-welcome-tagline', t('appTagline'));
+  setTxt('ui-welcome-lang', state.lang === 'en' ? 'عربي' : 'English');
+  setTxt('ui-welcome-hero-title', t('welcomeHeroTitle'));
+  setTxt('ui-welcome-hero-desc', t('welcomeHeroDesc'));
+  setTxt('ui-welcome-feat1', t('welcomeFeat1'));
+  setTxt('ui-welcome-feat2', t('welcomeFeat2'));
+  setTxt('ui-welcome-feat3', t('welcomeFeat3'));
+  setTxt('ui-welcome-feat4', t('welcomeFeat4'));
+
+  setTxt('ui-login-card-title', t('loginCardTitle'));
+  setTxt('ui-login-admin-note', t('loginAdminOnlyNote'));
+  setTxt('ui-login-email-label', t('loginEmailLabel'));
+  setTxt('ui-login-password-label', t('loginPasswordLabel'));
+  setTxt('ui-login-btn', t('loginBtn'));
+
+  // Admin Panel Strings
+  setTxt('ui-admin-panel-title', t('adminPanelTitle'));
+  setTxt('ui-admin-panel-desc', t('adminPanelDesc'));
+  setTxt('ui-admin-create-title', t('adminCreateTitle'));
+  setTxt('ui-admin-create-btn', t('adminCreateBtn'));
+  setTxt('ui-admin-users-list-title', t('adminUsersListTitle'));
+
+  const adminNameInput = document.getElementById('admin-new-name');
+  if (adminNameInput) adminNameInput.placeholder = t('adminUserNamePh');
+  const adminEmailInput = document.getElementById('admin-new-email');
+  if (adminEmailInput) adminEmailInput.placeholder = t('adminUserEmailPh');
+  const adminPassInput = document.getElementById('admin-new-password');
+  if (adminPassInput) adminPassInput.placeholder = t('adminUserPassPh');
 
   setTxt('ui-app-name', t('appName'));
   setTxt('ui-app-tagline', t('appTagline'));
@@ -276,8 +346,20 @@ function renderShellStrings() {
   // Profile & Onboarding headers
   setTxt('ui-profile-title', t('profileTitle'));
   setTxt('ui-signed-in-as', t('signedInAs'));
-  setTxt('profile-user-display', state.user.name);
-  setTxt('profile-email-display', state.user.email);
+
+  const userDisplay = document.getElementById('profile-user-display');
+  const emailDisplay = document.getElementById('profile-email-display');
+  const currentRole = state.currentUser?.role || (state.user?.email === 'karim@nawwa.app' ? 'admin' : 'user');
+  if (userDisplay) {
+    const roleBadgeHtml = currentRole === 'admin'
+      ? ` <span class="admin-badge" style="font-size:0.75rem; vertical-align:middle;">👑 Admin</span>`
+      : ` <span style="font-size:0.75rem; padding:2px 8px; border-radius:10px; background:rgba(52,211,153,0.18); color:var(--green-400); border:1px solid rgba(52,211,153,0.4); vertical-align:middle;">🌱 Member</span>`;
+    userDisplay.innerHTML = `${escapeHtml(state.user.name)}${roleBadgeHtml}`;
+  }
+  if (emailDisplay) {
+    emailDisplay.textContent = state.user.email;
+  }
+
   setTxt('ui-switch-account', t('switchAccountBtn'));
   setTxt('ui-export-backup', t('exportBackupBtn'));
   setTxt('ui-logout-btn', t('logoutBtn'));
@@ -316,6 +398,121 @@ function renderShellStrings() {
   setTxt('ui-custom-pillar-modal-title', t('customPillarModalTitle'));
   setTxt('ui-save-pillar-btn', t('savePillarBtn'));
   setTxt('btn-cancel-custom-pillar', t('cancelBtn'));
+}
+
+// Render Admin Control Panel (Visible only when currentUser.role === 'admin')
+function renderAdminPanel() {
+  const panel = document.getElementById('admin-panel');
+  if (!panel) return;
+
+  const isAdmin = (state.currentUser?.role === 'admin') || (state.user?.email === 'karim@nawwa.app' && state.user?.role === 'admin');
+
+  if (!isAdmin) {
+    panel.classList.add('hidden');
+    return;
+  }
+
+  panel.classList.remove('hidden');
+
+  const countBadge = document.getElementById('admin-user-count-badge');
+  if (countBadge) {
+    countBadge.textContent = state.lang === 'ar'
+      ? `إجمالي المستخدمين: ${state.users.length}`
+      : `Total Users: ${state.users.length}`;
+  }
+
+  const list = document.getElementById('admin-users-list');
+  if (!list) return;
+
+  list.innerHTML = '';
+
+  (state.users || []).forEach((user) => {
+    const isUserAdmin = user.role === 'admin';
+    const isKarim = user.email.toLowerCase() === 'karim@nawwa.app';
+
+    const row = document.createElement('div');
+    row.className = 'admin-user-row';
+
+    const badgeHtml = isUserAdmin
+      ? `<span class="admin-badge">${escapeHtml(t('adminRoleBadge'))}</span>`
+      : `<span style="font-size:0.75rem; padding:2px 8px; border-radius:12px; background:rgba(52,211,153,0.15); color:var(--green-400); border:1px solid rgba(52,211,153,0.3);">${escapeHtml(t('memberRoleBadge'))}</span>`;
+
+    const deleteBtnHtml = isKarim
+      ? ''
+      : `<button type="button" class="mini-btn btn-delete-user" data-user-id="${escapeHtml(user.id)}" title="${state.lang === 'ar' ? 'حذف المستخدم' : 'Delete user'}" style="color:#fb7185; border-color:rgba(251,113,133,0.4);">🗑️</button>`;
+
+    const credsString = `${user.name} | ${user.email} | ${user.password}`;
+
+    row.innerHTML = `
+      <div style="display:flex; align-items:center; gap:10px; min-width:220px;">
+        <span style="font-size:1.4rem;">${isUserAdmin ? '👑' : '🌱'}</span>
+        <div>
+          <div style="font-weight:800; font-size:0.92rem; display:flex; align-items:center; gap:6px;">
+            ${escapeHtml(user.name)}
+            ${badgeHtml}
+          </div>
+          <div style="font-size:0.8rem; color:var(--text-muted);">${escapeHtml(user.email)}</div>
+          <div style="font-size:0.78rem; margin-top:2px;">
+            <span style="font-family:monospace; background:var(--bg-surface); padding:2px 6px; border-radius:4px; border:1px solid var(--border-color);">
+              🔑 ${escapeHtml(user.password)}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="text-align:end; font-size:0.8rem; margin-inline-end:6px;">
+          <strong style="color:var(--blue-400);">${Number(user.points) || 0} pts</strong>
+          <div style="color:var(--text-muted); font-size:0.74rem;">🔥 ${Number(user.streak) || 0}d</div>
+        </div>
+        <button type="button" class="mini-btn btn-copy-creds" data-creds="${escapeHtml(credsString)}" style="border-color:var(--gold-border); color:var(--text-main);">
+          📋 ${escapeHtml(t('adminCopyCreds'))}
+        </button>
+        ${deleteBtnHtml}
+      </div>
+    `;
+
+    list.appendChild(row);
+  });
+
+  list.querySelectorAll('.btn-copy-creds').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const creds = btn.getAttribute('data-creds');
+      if (creds) {
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(creds);
+          }
+        } catch (_) {}
+        showToast(
+          state.lang === 'ar'
+            ? '📋 تم نسخ بيانات الدخول إلى الحافظة بنجاح!'
+            : '📋 User credentials copied to clipboard!'
+        );
+      }
+    });
+  });
+
+  list.querySelectorAll('.btn-delete-user').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const uid = btn.getAttribute('data-user-id');
+      const targetUser = state.users.find((u) => u.id === uid);
+      if (!targetUser) return;
+      if (targetUser.email.toLowerCase() === 'karim@nawwa.app') {
+        showToast(state.lang === 'ar' ? '⚠️ لا يمكن حذف حساب المدير الرئيسي!' : '⚠️ Cannot delete main Admin!');
+        return;
+      }
+      state.users = state.users.filter((u) => u.id !== uid);
+      state.champions.squadMembers = (state.champions.squadMembers || []).filter((m) => m.id !== uid);
+      saveState();
+      renderAdminPanel();
+      renderLeaderboard();
+      showToast(
+        state.lang === 'ar'
+          ? `🗑️ تم حذف حساب (${targetUser.name}) بنجاح.`
+          : `🗑️ Deleted account for (${targetUser.name}).`
+      );
+    });
+  });
 }
 
 // Render 7-Day Weekly Seed Momentum Strip
@@ -1500,6 +1697,170 @@ function initEvents() {
     );
   });
 
+  // Welcome Landing Screen & Authentication Handlers
+  const formLogin = document.getElementById('form-login');
+  formLogin?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const emailInput = document.getElementById('login-email');
+    const passInput = document.getElementById('login-password');
+    const errBox = document.getElementById('login-error-msg');
+
+    const emailVal = emailInput?.value.trim().toLowerCase();
+    const passVal = passInput?.value.trim();
+
+    const foundUser = (state.users || []).find(
+      (u) => u.email.toLowerCase() === emailVal && u.password === passVal
+    );
+
+    if (!foundUser) {
+      if (errBox) {
+        errBox.textContent = t('loginErrorMsg');
+        errBox.classList.remove('hidden');
+      }
+      return;
+    }
+
+    if (errBox) errBox.classList.add('hidden');
+
+    state.isAuthenticated = true;
+    state.currentUser = foundUser;
+    state.user = {
+      name: foundUser.name,
+      email: foundUser.email,
+      role: foundUser.role,
+      onboarded: true
+    };
+    if (typeof foundUser.points === 'number') {
+      state.points = foundUser.points;
+    }
+    if (typeof foundUser.streak === 'number') {
+      state.streak = foundUser.streak;
+    }
+
+    saveState();
+    renderAll();
+
+    showToast(
+      state.lang === 'ar'
+        ? `👋 مرحباً بك يا ${foundUser.name}! (${foundUser.role === 'admin' ? 'مدير النظام' : 'عضو'})`
+        : `👋 Welcome, ${foundUser.name}! (${foundUser.role === 'admin' ? 'Admin' : 'Member'})`
+    );
+  });
+
+  document.getElementById('btn-toggle-login-pass')?.addEventListener('click', () => {
+    const passInput = document.getElementById('login-password');
+    if (passInput) {
+      passInput.type = passInput.type === 'password' ? 'text' : 'password';
+    }
+  });
+
+  document.getElementById('btn-quick-fill-admin')?.addEventListener('click', () => {
+    const emailInput = document.getElementById('login-email');
+    const passInput = document.getElementById('login-password');
+    if (emailInput) emailInput.value = 'karim@nawwa.app';
+    if (passInput) passInput.value = 'Nawwa2026!';
+    showToast(
+      state.lang === 'ar'
+        ? '👑 تم ملء بيانات الدخول لمدير النظام (كريم)!'
+        : '👑 Filled Admin credentials (Karim)!'
+    );
+  });
+
+  document.getElementById('btn-welcome-lang')?.addEventListener('click', () => {
+    state.lang = state.lang === 'en' ? 'ar' : 'en';
+    state.micLang = state.lang === 'ar' ? 'ar-EG' : 'en-US';
+    document.documentElement.lang = state.lang;
+    document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+    saveState();
+    renderAll();
+  });
+
+  document.getElementById('btn-welcome-theme')?.addEventListener('click', () => {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', state.theme);
+    saveState();
+    renderAll();
+  });
+
+  document.getElementById('btn-onboarding-lang')?.addEventListener('click', () => {
+    state.lang = state.lang === 'en' ? 'ar' : 'en';
+    state.micLang = state.lang === 'ar' ? 'ar-EG' : 'en-US';
+    document.documentElement.lang = state.lang;
+    document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+    saveState();
+    renderAll();
+  });
+
+  // Admin User Creation Form
+  const formCreateUser = document.getElementById('form-admin-create-user');
+  formCreateUser?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const nameEl = document.getElementById('admin-new-name');
+    const emailEl = document.getElementById('admin-new-email');
+    const passEl = document.getElementById('admin-new-password');
+    const roleEl = document.getElementById('admin-new-role');
+
+    const newName = nameEl?.value.trim();
+    const newEmail = emailEl?.value.trim().toLowerCase();
+    const newPass = passEl?.value.trim();
+    const newRole = roleEl?.value || 'user';
+
+    if (!newName || !newEmail || !newPass) {
+      showToast(
+        state.lang === 'ar'
+          ? '⚠️ يرجى ملء جميع الحقول المطلوبة'
+          : '⚠️ Please fill all required fields'
+      );
+      return;
+    }
+
+    if (state.users.some((u) => u.email.toLowerCase() === newEmail)) {
+      showToast(
+        state.lang === 'ar'
+          ? '⚠️ هذا البريد الإلكتروني مسجل بالفعل لمستخدم آخر!'
+          : '⚠️ This email is already registered to another user!'
+      );
+      return;
+    }
+
+    const newUser = {
+      id: 'user_' + Date.now(),
+      name: newName,
+      email: newEmail,
+      password: newPass,
+      role: newRole,
+      points: 0,
+      streak: 0
+    };
+
+    state.users.push(newUser);
+
+    if (!state.champions.squadMembers.some((m) => m.id === newUser.id)) {
+      state.champions.squadMembers.push({
+        id: newUser.id,
+        name: { en: newUser.name, ar: newUser.name },
+        points: 0,
+        streak: 0,
+        checkedInToday: false,
+        badge: newRole === 'admin' ? '👑' : '🌱'
+      });
+    }
+
+    saveState();
+    renderAdminPanel();
+    renderLeaderboard();
+
+    nameEl.value = '';
+    emailEl.value = '';
+    passEl.value = '';
+
+    showToast(
+      state.lang === 'ar'
+        ? `🎉 تم إنشاء حساب (${newName}) بنجاح! انسخ بياناته من القائمة بالأسفل.`
+        : `🎉 Created account for (${newName})! Copy credentials below to share.`
+    );
+  });
+
   // Onboarding / Account Modal & Backup Export
   document.getElementById('btn-export-backup')?.addEventListener('click', () => {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
@@ -1541,12 +1902,14 @@ function initEvents() {
   });
 
   document.getElementById('btn-logout')?.addEventListener('click', () => {
-    renderPillarSelectors();
-    document.getElementById('onboarding-modal')?.classList.remove('hidden');
+    state.isAuthenticated = false;
+    state.currentUser = null;
+    saveState();
+    renderAll();
     showToast(
       state.lang === 'ar'
-        ? '🚪 تم فتح شاشة تسجيل الدخول وتبديل الحساب'
-        : '🚪 Logged out — Sign in below or switch account'
+        ? '🚪 تم تسجيل الخروج بنجاح. أهلاً بك في صفحة البداية.'
+        : '🚪 Logged out successfully. Welcome to Nawwa.'
     );
   });
 
@@ -1554,7 +1917,11 @@ function initEvents() {
     e.preventDefault();
     const nameVal = document.getElementById('ob-name').value.trim() || 'Karim';
     const emailVal = document.getElementById('ob-email').value.trim() || 'karim@nawwa.app';
-    state.user = { name: nameVal, email: emailVal, onboarded: true };
+    state.user = { name: nameVal, email: emailVal, role: state.user?.role || 'user', onboarded: true };
+    if (state.currentUser) {
+      state.currentUser.name = nameVal;
+      state.currentUser.email = emailVal;
+    }
     saveState();
     document.getElementById('onboarding-modal')?.classList.add('hidden');
     renderAll();
@@ -1586,6 +1953,7 @@ function initEvents() {
 
 function renderAll() {
   renderShellStrings();
+  renderAdminPanel();
   renderPillars();
   renderCoachSection();
   renderCalendar();
