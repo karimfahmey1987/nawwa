@@ -13,6 +13,11 @@ import {
   getGoogleCalendarUrl,
   downloadIcsFile
 } from './calendar-notifications.js';
+import {
+  initBrainGames,
+  openBrainGamesModal,
+  closeBrainGamesModal
+} from './brain-games.js';
 
 const STORAGE_KEY = 'better_me_state_v1';
 
@@ -525,6 +530,36 @@ function renderShellStrings() {
   setTxt('ui-custom-pillar-modal-title', t('customPillarModalTitle'));
   setTxt('ui-save-pillar-btn', t('savePillarBtn'));
   setTxt('btn-cancel-custom-pillar', t('cancelBtn'));
+
+  // Brain Gym & Activity Games Translations
+  setTxt('ui-brain-gym-title', t('brainGymTitle'));
+  setTxt('ui-brain-gym-subtitle', t('brainGymSubtitle'));
+  setTxt('ui-play-brain-games-btn', t('playBrainGamesBtn'));
+
+  setTxt('ui-brain-modal-title', t('brainModalTitle'));
+  setTxt('ui-brain-modal-subtitle', t('brainModalSubtitle'));
+  setTxt('ui-game-tab-pattern', t('gameTabPattern'));
+  setTxt('ui-game-tab-stroop', t('gameTabStroop'));
+  setTxt('ui-game-tab-cards', t('gameTabCards'));
+
+  setTxt('ui-pattern-instructions', t('patternInstructions'));
+  setTxt('ui-pattern-level-label', t('patternLevel'));
+  setTxt('ui-pattern-high-label', t('patternHighScore'));
+  setTxt('ui-pattern-start-btn', t('patternStartBtn'));
+
+  setTxt('ui-stroop-instructions', t('stroopInstructions'));
+  setTxt('ui-stroop-time-label', t('stroopTime'));
+  setTxt('ui-stroop-score-label', t('stroopScore'));
+  setTxt('ui-stroop-streak-label', t('stroopStreak'));
+  setTxt('ui-stroop-start-btn', t('stroopStartBtn'));
+
+  setTxt('ui-cards-instructions', t('cardsInstructions'));
+  setTxt('ui-cards-moves-label', t('cardsMoves'));
+  setTxt('ui-cards-matched-label', t('cardsMatched'));
+  setTxt('ui-cards-time-label', t('cardsTime'));
+  setTxt('ui-cards-restart-btn', t('cardsRestartBtn'));
+
+  setTxt('ui-sos-tab-brain', t('sosTabBrain'));
 
   // Update PWA mobile install controls and status
   updatePwaInstallUi();
@@ -1345,7 +1380,7 @@ function openSosModal(subtab = 'urge') {
 }
 
 function switchSosSubtab(subtab) {
-  ['urge', 'procrastinate', 'energy'].forEach((k) => {
+  ['urge', 'procrastinate', 'energy', 'brain'].forEach((k) => {
     const panel = document.getElementById(`sos-panel-${k}`);
     if (panel) panel.classList.toggle('hidden', k !== subtab);
   });
@@ -2096,11 +2131,28 @@ function initEvents() {
     launchConfetti();
   });
 
+  // Initialize Brain Activity Games
+  initBrainGames(
+    () => state,
+    (pts, gameName) => {
+      state.points = (state.points || 0) + pts;
+      if (!state.completedToday['focus_most_important']) {
+        state.completedToday['focus_most_important'] = 'bronze';
+      }
+      saveState();
+      renderAll();
+    },
+    showToast,
+    launchConfetti,
+    t
+  );
+
   // Close any open modal when clicking backdrop or pressing Escape
   document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
     backdrop.addEventListener('click', (e) => {
       if (e.target === backdrop) {
         if (backdrop.id === 'sos-modal') closeSosModal();
+        else if (backdrop.id === 'brain-games-modal') closeBrainGamesModal();
         else backdrop.classList.add('hidden');
       }
     });
@@ -2109,6 +2161,7 @@ function initEvents() {
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeSosModal();
+      closeBrainGamesModal();
       document.getElementById('custom-pillar-modal')?.classList.add('hidden');
       document.getElementById('onboarding-modal')?.classList.add('hidden');
       document.getElementById('pwa-ios-modal')?.classList.add('hidden');

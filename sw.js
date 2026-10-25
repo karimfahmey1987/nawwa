@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nawwa-v9';
+const CACHE_NAME = 'nawwa-v10';
 const ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const ASSETS = [
   './js/data.js',
   './js/voice-audio.js',
   './js/calendar-notifications.js',
+  './js/brain-games.js',
   './js/app.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
