@@ -133,6 +133,18 @@ export const I18N = {
     adminCopyCreds: "Copy Login",
     adminRoleBadge: "👑 Admin",
     memberRoleBadge: "🌱 Member",
+    pwaInstallTitle: "Install Nawwa on your Phone",
+    pwaInstallDesc: "Open instantly from your Home Screen with 0 browser clutter!",
+    pwaInstallBtn: "Install App",
+    pwaInstallLater: "Later",
+    pwaIosTitle: "Install Nawwa on iPhone / iPad",
+    pwaIosDesc: "Safari needs 3 quick steps to add Nawwa to your home screen:",
+    pwaIosStep1: "Tap the Share button ⎋ at the bottom of Safari.",
+    pwaIosStep2: "Scroll down and tap \"Add to Home Screen\" ➕.",
+    pwaIosStep3: "Tap \"Add\" in the top-right corner. Done!",
+    pwaIosGotIt: "✓ Got It!",
+    pwaInstalledSuccess: "🎉 Nawwa is now installed on your device! You can launch it anytime from your home screen.",
+    pwaStandaloneActive: "✓ App Installed on Home Screen",
     daysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
   },
   ar: {
@@ -269,6 +281,18 @@ export const I18N = {
     adminCopyCreds: "نسخ بيانات الدخول",
     adminRoleBadge: "👑 مدير النظام",
     memberRoleBadge: "🌱 عضو",
+    pwaInstallTitle: "ثبّت نَوَاة على هاتفك",
+    pwaInstallDesc: "افتح التطبيق مباشرة من الشاشة الرئيسية دون الحاجة للمتصفح في كل مرة!",
+    pwaInstallBtn: "تثبيت التطبيق",
+    pwaInstallLater: "لاحقاً",
+    pwaIosTitle: "تثبيت نَوَاة على آيفون وآيباد",
+    pwaIosDesc: "يتطلب متصفح سفاري ٣ خطوات بسيطة لإضافة التطبيق لشاشتك:",
+    pwaIosStep1: "اضغط على زر المشاركة ⎋ في شريط سفاري بالأسفل.",
+    pwaIosStep2: "مرر للأسفل واضغط على \"إضافة إلى الصفحة الرئيسية\" ➕.",
+    pwaIosStep3: "اضغط على \"إضافة\" (Add) أعلى اليمين. تم بنجاح!",
+    pwaIosGotIt: "✓ حسناً، فهمت",
+    pwaInstalledSuccess: "🎉 تم تثبيت نَوَاة على هاتفك بنجاح! يمكنك الآن فتحه مباشرة من الشاشة الرئيسية.",
+    pwaStandaloneActive: "✓ التطبيق مثبت على الشاشة الرئيسية",
     daysShort: ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"]
   }
 };

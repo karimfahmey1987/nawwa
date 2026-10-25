@@ -2,10 +2,17 @@
 <html lang="en" dir="ltr" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#10b981" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Nawwa" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="Nawwa" />
   <title>Nawwa | نواة — Tiny Seeds, Big Life</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2310b981'/%3E%3Ctext x='60' y='82' font-size='70' text-anchor='middle'%3E🌱%3C/text%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="./css/styles.css" />
 </head>
@@ -13,6 +20,22 @@
   <!-- Toast Alerts & Confetti Celebration Layer -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
   <div id="confetti-container" class="confetti-container" aria-hidden="true"></div>
+
+  <!-- PWA MOBILE INSTALL FLOATING BANNER (Shown automatically when opened on mobile browser) -->
+  <aside id="pwa-install-banner" class="pwa-install-banner hidden" aria-label="Install App Prompt">
+    <img src="./icons/icon-192.png" alt="Nawwa Icon" class="pwa-banner-thumb" />
+    <div class="pwa-banner-text">
+      <strong id="ui-pwa-install-title" class="pwa-banner-title">Install Nawwa on your Phone</strong>
+      <span id="ui-pwa-install-desc" class="pwa-banner-desc">Open directly from your Home Screen with 0 browser clutter!</span>
+    </div>
+    <div class="pwa-banner-actions">
+      <button id="btn-pwa-install-action" class="pwa-install-btn" type="button">
+        <span>📲</span>
+        <span id="ui-pwa-install-btn">Install App</span>
+      </button>
+      <button id="btn-pwa-dismiss" class="pwa-dismiss-btn" type="button" title="Dismiss">✕</button>
+    </div>
+  </aside>
 
   <!-- WELCOME & SIGN-IN SCREEN (For New Users & Logged-Out Visitors) -->
   <section id="welcome-screen" class="welcome-screen">
@@ -24,7 +47,11 @@
           <span class="brand-subtitle" id="ui-welcome-tagline">Plant a Tiny Seed • Grow Every Day</span>
         </div>
       </div>
-      <div style="display: flex; gap: 8px;">
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button id="btn-welcome-install" class="header-install-btn hidden" type="button">
+          <span>📲</span>
+          <span id="ui-welcome-install-label">Install App</span>
+        </button>
         <button id="btn-welcome-theme" class="icon-btn" type="button" title="Toggle Theme">☀️</button>
         <button id="btn-welcome-lang" class="icon-btn" type="button">🌐 <span id="ui-welcome-lang">عربي</span></button>
       </div>
@@ -112,6 +139,10 @@
       </div>
 
       <div class="header-actions">
+        <button id="btn-header-install" class="header-install-btn hidden" type="button" title="Install App">
+          <span>📲</span>
+          <span id="ui-header-install">Install</span>
+        </button>
         <button id="btn-sos" class="sos-btn" type="button">
           <span>🚨</span>
           <span id="ui-sos-btn">SOS Rescue</span>
@@ -423,7 +454,15 @@
               (<span id="profile-email-display">karim@nawwa.app</span>)
             </p>
           </div>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button id="btn-profile-install" class="header-install-btn hidden" type="button">
+              <span>📲</span>
+              <span id="ui-profile-install">Install App on Phone</span>
+            </button>
+            <span id="pwa-standalone-badge" class="pwa-installed-pill hidden">
+              <span>✓</span>
+              <span id="ui-standalone-active">App Installed</span>
+            </span>
             <button id="btn-open-onboarding" class="btn-primary" type="button">
               🔑 <span id="ui-switch-account">Sign In / Switch Account</span>
             </button>
@@ -668,6 +707,41 @@
           <span id="ui-onboarding-submit">🚀 Sign In & Start My Journey</span>
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL 4: iOS Safari Add to Home Screen Instructions -->
+  <div id="pwa-ios-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-box" style="text-align: center; max-width: 440px;">
+      <div style="display: flex; justify-content: flex-end;">
+        <button id="btn-close-pwa-ios" class="icon-btn" type="button">✕</button>
+      </div>
+      <div style="font-size: 2.6rem; margin-bottom: 6px;">📲</div>
+      <h3 id="ui-pwa-ios-title" style="font-size: 1.18rem; font-weight: 800; margin-bottom: 6px;">
+        Install Nawwa on iPhone / iPad
+      </h3>
+      <p id="ui-pwa-ios-desc" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+        Safari needs 3 quick steps to add Nawwa to your home screen:
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; text-align: start; margin-bottom: 18px; font-size: 0.86rem;">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <span style="font-size: 1.4rem; flex-shrink: 0;">1️⃣</span>
+          <span id="ui-pwa-ios-step1">Tap the <strong>Share</strong> button <span style="font-size:1rem; padding: 2px 7px; background: var(--bg-card); border-radius: 4px; border: 1px solid var(--border-color); font-weight: 700;">⎋</span> in Safari's bottom toolbar.</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <span style="font-size: 1.4rem; flex-shrink: 0;">2️⃣</span>
+          <span id="ui-pwa-ios-step2">Scroll down and tap <strong>"Add to Home Screen" ➕</strong>.</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <span style="font-size: 1.4rem; flex-shrink: 0;">3️⃣</span>
+          <span id="ui-pwa-ios-step3">Tap <strong>"Add"</strong> in the top-right corner. All done!</span>
+        </div>
+      </div>
+
+      <button id="btn-pwa-ios-got-it" class="btn-primary" type="button" style="width: 100%; padding: 12px; font-size: 0.95rem;">
+        <span id="ui-pwa-ios-got-it">✓ Got It!</span>
+      </button>
     </div>
   </div>
 

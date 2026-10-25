@@ -184,6 +184,133 @@ function localText(objOrStr) {
   return objOrStr[state.lang] || objOrStr.en || objOrStr.ar || '';
 }
 
+// ==========================================
+// PWA & Mobile Installation Detection System
+// ==========================================
+let deferredPrompt = null;
+let pwaBannerDismissed = false;
+
+export function isStandaloneMode() {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://')
+  );
+}
+
+export function isMobileDevice() {
+  if (typeof window === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua);
+  return isMobileUA || (window.innerWidth <= 840 && isTouch);
+}
+
+export function isIosDevice() {
+  if (typeof window === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+export function showPwaBanner() {
+  if (isStandaloneMode()) return;
+  if (pwaBannerDismissed || sessionStorage.getItem('pwa_dismissed') === 'true') return;
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) {
+    banner.classList.remove('hidden');
+  }
+}
+
+export function dismissPwaBanner() {
+  pwaBannerDismissed = true;
+  try {
+    sessionStorage.setItem('pwa_dismissed', 'true');
+  } catch (_) {}
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) {
+    banner.classList.add('hidden');
+  }
+}
+
+export function triggerInstallFlow() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult && choiceResult.outcome === 'accepted') {
+        dismissPwaBanner();
+      }
+      deferredPrompt = null;
+    });
+  } else if (isIosDevice()) {
+    const modal = document.getElementById('pwa-ios-modal');
+    if (modal) modal.classList.remove('hidden');
+  } else {
+    // Other browser or manual prompt instruction
+    showToast(
+      state.lang === 'ar'
+        ? '📲 لتثبيت التطبيق على هاتفك، افتح قائمة المتصفح (⋮) واختر "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية"'
+        : '📲 To install on your phone, open browser menu (⋮) and tap "Install app" or "Add to Home Screen"'
+    );
+  }
+}
+
+export function updatePwaInstallUi() {
+  const isStandalone = isStandaloneMode();
+  const isMobile = isMobileDevice();
+
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+
+  setTxt('ui-pwa-install-title', t('pwaInstallTitle'));
+  setTxt('ui-pwa-install-desc', t('pwaInstallDesc'));
+  setTxt('ui-pwa-install-btn', t('pwaInstallBtn'));
+  setTxt('ui-welcome-install-label', t('pwaInstallBtn'));
+  setTxt('ui-header-install', t('pwaInstallBtn'));
+  setTxt('ui-profile-install', t('pwaInstallBtn'));
+  setTxt('ui-standalone-active', t('pwaStandaloneActive'));
+
+  setTxt('ui-pwa-ios-title', t('pwaIosTitle'));
+  setTxt('ui-pwa-ios-desc', t('pwaIosDesc'));
+  setTxt('ui-pwa-ios-step1', t('pwaIosStep1'));
+  setTxt('ui-pwa-ios-step2', t('pwaIosStep2'));
+  setTxt('ui-pwa-ios-step3', t('pwaIosStep3'));
+  setTxt('ui-pwa-ios-got-it', t('pwaIosGotIt'));
+
+  const banner = document.getElementById('pwa-install-banner');
+  const btnHeader = document.getElementById('btn-header-install');
+  const btnWelcome = document.getElementById('btn-welcome-install');
+  const btnProfile = document.getElementById('btn-profile-install');
+  const badgeStandalone = document.getElementById('pwa-standalone-badge');
+
+  if (isStandalone) {
+    if (banner) banner.classList.add('hidden');
+    if (btnHeader) btnHeader.classList.add('hidden');
+    if (btnWelcome) btnWelcome.classList.add('hidden');
+    if (btnProfile) btnProfile.classList.add('hidden');
+    if (badgeStandalone) badgeStandalone.classList.remove('hidden');
+  } else {
+    if (badgeStandalone) badgeStandalone.classList.add('hidden');
+    if (isMobile || deferredPrompt) {
+      if (btnHeader) btnHeader.classList.remove('hidden');
+      if (btnWelcome) btnWelcome.classList.remove('hidden');
+      if (btnProfile) btnProfile.classList.remove('hidden');
+
+      if (!pwaBannerDismissed && sessionStorage.getItem('pwa_dismissed') !== 'true') {
+        if (banner) banner.classList.remove('hidden');
+      }
+    } else {
+      if (banner) banner.classList.add('hidden');
+      if (btnHeader) btnHeader.classList.add('hidden');
+      if (btnWelcome) btnWelcome.classList.add('hidden');
+      if (btnProfile) btnProfile.classList.add('hidden');
+    }
+  }
+}
+
 export function showToast(message) {
   const container = document.getElementById('toast-container');
   if (!container) return;
@@ -398,6 +525,9 @@ function renderShellStrings() {
   setTxt('ui-custom-pillar-modal-title', t('customPillarModalTitle'));
   setTxt('ui-save-pillar-btn', t('savePillarBtn'));
   setTxt('btn-cancel-custom-pillar', t('cancelBtn'));
+
+  // Update PWA mobile install controls and status
+  updatePwaInstallUi();
 }
 
 // Render Admin Control Panel (Visible only when currentUser.role === 'admin')
@@ -1932,6 +2062,40 @@ function initEvents() {
     );
   });
 
+  // PWA Mobile Installation Event Handlers
+  document.getElementById('btn-pwa-install-action')?.addEventListener('click', triggerInstallFlow);
+  document.getElementById('btn-welcome-install')?.addEventListener('click', triggerInstallFlow);
+  document.getElementById('btn-header-install')?.addEventListener('click', triggerInstallFlow);
+  document.getElementById('btn-profile-install')?.addEventListener('click', triggerInstallFlow);
+
+  document.getElementById('btn-pwa-dismiss')?.addEventListener('click', () => {
+    dismissPwaBanner();
+  });
+
+  document.getElementById('btn-close-pwa-ios')?.addEventListener('click', () => {
+    document.getElementById('pwa-ios-modal')?.classList.add('hidden');
+  });
+
+  document.getElementById('btn-pwa-ios-got-it')?.addEventListener('click', () => {
+    document.getElementById('pwa-ios-modal')?.classList.add('hidden');
+    dismissPwaBanner();
+  });
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    updatePwaInstallUi();
+    showPwaBanner();
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    dismissPwaBanner();
+    updatePwaInstallUi();
+    showToast(t('pwaInstalledSuccess'));
+    launchConfetti();
+  });
+
   // Close any open modal when clicking backdrop or pressing Escape
   document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
     backdrop.addEventListener('click', (e) => {
@@ -1947,6 +2111,7 @@ function initEvents() {
       closeSosModal();
       document.getElementById('custom-pillar-modal')?.classList.add('hidden');
       document.getElementById('onboarding-modal')?.classList.add('hidden');
+      document.getElementById('pwa-ios-modal')?.classList.add('hidden');
     }
   });
 }
@@ -1972,5 +2137,12 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').catch(() => {});
     }
+
+    // Automatically prompt mobile installation after gentle paint delay if opened in mobile browser
+    setTimeout(() => {
+      if (isMobileDevice() && !isStandaloneMode() && !pwaBannerDismissed && sessionStorage.getItem('pwa_dismissed') !== 'true') {
+        showPwaBanner();
+      }
+    }, 1200);
   });
 }
