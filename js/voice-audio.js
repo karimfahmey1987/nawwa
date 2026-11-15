@@ -265,7 +265,7 @@ function splitIntoChunks(text, maxLen = 175) {
   return chunks.length ? chunks : [text];
 }
 
-// Natural Speech Output with zero-latency browser synthesis and anti-garbage collection
+// Natural Speech Output with Cloud Neural TTS support + zero-latency browser synthesis fallback
 export function speakText(text, fallbackLang = 'en', voiceEnabled = true, onStart = null, onEnd = null, voiceSettings = {}) {
   if (!voiceEnabled) {
     if (onEnd) onEnd();
@@ -281,13 +281,28 @@ export function speakText(text, fallbackLang = 'en', voiceEnabled = true, onStar
   stopSpeaking();
   unlockAudio();
 
+  const isAr = isArabicText(cleanText) || (fallbackLang === 'ar' && !/[a-zA-Z]{4,}/.test(cleanText));
+  const rate = Number(voiceSettings?.rate) || 1.0;
+  const preferCloud = voiceSettings?.engine === 'cloud' && typeof navigator !== 'undefined' && navigator.onLine !== false;
+
+  if (preferCloud) {
+    tryCloudNeuralTTS(cleanText, isAr, rate, onStart, onEnd).then((ok) => {
+      if (!ok) {
+        speakWithBrowserTTS(cleanText, isAr, rate, onStart, onEnd);
+      }
+    });
+    return;
+  }
+
+  speakWithBrowserTTS(cleanText, isAr, rate, onStart, onEnd);
+}
+
+function speakWithBrowserTTS(cleanText, isAr, rate, onStart, onEnd) {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
     if (onEnd) onEnd();
     return;
   }
 
-  const isAr = isArabicText(cleanText) || (fallbackLang === 'ar' && !/[a-zA-Z]{4,}/.test(cleanText));
-  const rate = Number(voiceSettings.rate) || 1.0;
   const bestVoice = getBestBrowserVoice(isAr);
 
   try {
@@ -563,6 +578,11 @@ function buildCoachSystemPrompt(state) {
     .map((ev) => `${ev.time}: ${ev.title.en || ev.title}`)
     .join(', ');
 
+  const gratitudeSummary = (state.gratitudeLog || [])
+    .slice(-3)
+    .map((g) => `${g.mood || '🌿'} ${g.text} (${g.date || 'recent'})`)
+    .join(' | ');
+
   return `You are "Nawwa Coach" (مدرب تطبيق نَوَاة الذكي), a warm, deeply empathetic, insightful personal life & behavioral psychology coach.
 You help the user plant tiny 2-minute seeds (نواة) to overcome procrastination, low motivation, smoking/bad habits, emotional eating/obesity, workout skipping, and strengthen their Islamic faith (reading Quran, daily prayers, Adhkar) and family gatherings (صلة الرحم).
 
@@ -570,6 +590,7 @@ USER LIVE PROFILE & STATUS TODAY:
 - User Name: ${state.user.name}
 - Total Points: ${state.points} pts | Current Streak: ${state.streak} days
 - Low-Energy Bronze Mode Active: ${state.lowEnergyMode ? 'YES' : 'NO'}
+- Recent Gratitude & Mood Check-ins: ${gratitudeSummary || 'None logged yet'}
 - Active Life Pillars & Today's Habit Status:
 ${activePillarsSummary}
 - Today's Calendar Schedule: ${scheduleSummary || 'None'}
@@ -583,6 +604,9 @@ CRITICAL COACHING RULES:
    - To enable Low-Energy Bronze mode: [ACTION:ENABLE_LOW_ENERGY]
    - To open the 3-minute craving/urge breathing timer: [ACTION:OPEN_SOS:urge]
    - To open the Procrastination 5-min breaker timer: [ACTION:OPEN_SOS:procrastinate]
+   - To open the in-app Quran Mushaf page reader: [ACTION:OPEN_QURAN]
+   - To open the interactive Adhkar & Smart Tasbih counter: [ACTION:OPEN_ADHKAR]
+   - To open the Deep Focus Pomodoro timer & soundscape: [ACTION:OPEN_FOCUS_TIMER]
    - To add a calendar event/reminder: [ACTION:ADD_EVENT:HH:MM:Event Title] (use 24-hour time like 21:00)`;
 }
 
@@ -604,6 +628,12 @@ export function extractActionsFromReply(rawReply) {
       actions.push({ type: 'ENABLE_LOW_ENERGY' });
     } else if (type === 'OPEN_SOS') {
       actions.push({ type: 'OPEN_SOS', tab: (parts[1] || 'urge').toLowerCase() });
+    } else if (type === 'OPEN_QURAN') {
+      actions.push({ type: 'OPEN_QURAN' });
+    } else if (type === 'OPEN_ADHKAR') {
+      actions.push({ type: 'OPEN_ADHKAR' });
+    } else if (type === 'OPEN_FOCUS_TIMER') {
+      actions.push({ type: 'OPEN_FOCUS_TIMER' });
     } else if (type === 'ADD_EVENT') {
       const hh = String(parts[1] || '20').padStart(2, '0');
       const isMinNumeric = /^\d{1,2}$/.test(parts[2] || '');
@@ -617,7 +647,7 @@ export function extractActionsFromReply(rawReply) {
   return { cleanReply, actions };
 }
 
-// Real AI LLM Call (Supports Gemini API, OpenAI/Groq API, Local Ollama, and Free Cloud Pollinations OpenAI Endpoint)
+// Real AI LLM Call (Supports Serverless /api/coach, Gemini API, OpenAI/Groq API, and Free Cloud Pollinations OpenAI Endpoint)
 export async function generateSmartCoachResponse(userText, state) {
   const isBrowserOnline =
     typeof window !== 'undefined' &&
@@ -641,6 +671,27 @@ export async function generateSmartCoachResponse(userText, state) {
   ];
 
   const aiConfig = state.aiConfig || {};
+
+  // 0. Try Serverless /api/coach proxy first (if deployed on Vercel with server env keys)
+  if (!aiConfig.geminiKey && !aiConfig.openaiKey) {
+    try {
+      const controller = new AbortController();
+      const tId = setTimeout(() => controller.abort(), 5000);
+      const apiRes = await fetch('/api/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({ messages, systemPrompt, userText })
+      });
+      clearTimeout(tId);
+      if (apiRes.ok) {
+        const apiData = await apiRes.json();
+        if (apiData?.reply && apiData.reply.trim().length > 5) {
+          return extractActionsFromReply(apiData.reply);
+        }
+      }
+    } catch (_) {}
+  }
 
   // 1. If user configured a Google Gemini API Key
   if (aiConfig.geminiKey && aiConfig.geminiKey.trim()) {
@@ -808,9 +859,9 @@ function buildContextualOfflineReply(userText, state) {
   }
 
   // 3. Asking about Quran / Faith status
-  if (lower.includes('quran') || lower.includes('قرآن') || lower.includes('القرآن') || lower.includes('ورد')) {
+  if (lower.includes('quran') || lower.includes('قرآن') || lower.includes('القرآن') || lower.includes('ورد') || lower.includes('مصحف')) {
     const doneTier = completedToday['faith_quran'];
-    if (doneTier) {
+    if (doneTier && !lower.includes('open') && !lower.includes('افتح')) {
       return {
         cleanReply: isAr
           ? `ما شاء الله يا ${name}، نعم! لقد أتممت وردك من القرآن الكريم اليوم بالمستوى (${doneTier.toUpperCase()}). إذا أحببت الاستزادة، يمكنك قراءة بضع آيات إضافية أو إتمام أذكار المساء!`
@@ -818,10 +869,11 @@ function buildContextualOfflineReply(userText, state) {
         actions
       };
     }
+    actions.push({ type: 'OPEN_QURAN' });
     return {
       cleanReply: isAr
-        ? `لم تسجّل قراءة صفحتك من القرآن الكريم اليوم بعد يا ${name}. الشيطان والتسويف يحاولان دائماً تأجيلها لآخر اليوم—ما رأيك أن تفتح المصحف الآن وتقرأ صفحة واحدة فقط خلال ٣ دقائق ثم تخبرني لأسجّلها لك؟`
-        : `You haven't logged your Quran page today yet, ${name}. Procrastination loves to push spiritual habits to "later tonight"—how about opening the Mushaf right now for just 1 page (3 minutes) and telling me when you finish?`,
+        ? `لم تسجّل قراءة صفحتك من القرآن الكريم اليوم بعد يا ${name}. فتحتُ لك الآن قارئ المصحف والتلاوة الصوتية على صفحتك الحالية—اقرأ أو استمع لصفحة واحدة فقط خلال ٣ دقائق واضغط إتمام!`
+        : `You haven't logged your Quran page today yet, ${name}. I've opened the built-in Quran Mushaf Reader & Audio Player on your current page right now—read or listen to 1 page and tap Complete!`,
       actions
     };
   }

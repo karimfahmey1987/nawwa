@@ -172,6 +172,10 @@
           <p id="ui-momentum-subtitle">Remember: Action creates motivation. Pick any Bronze step to start!</p>
         </div>
         <div class="stats-pills">
+          <div class="stat-pill" id="stat-plant-stage" style="border-color: var(--gold-border); color: #facc15;" title="Your Nawwa Growth Stage">
+            <span id="stat-plant-icon">🌱</span>
+            <span id="stat-plant-label">Green Sprout</span>
+          </div>
           <div class="stat-pill pts">
             <span>💎</span>
             <span id="stat-points">120</span>
@@ -182,6 +186,10 @@
             <span id="stat-streak">5</span>
             <span id="ui-streak-label">Day Streak</span>
           </div>
+          <button type="button" id="btn-streak-shield" class="stat-pill" style="cursor: pointer; border-color: rgba(168,85,247,0.45); color: #c084fc;" title="Streak Protection Shield (Click to buy +1 shield for 50 pts)">
+            <span>🛡️</span>
+            <span id="stat-shields-count">x1</span>
+          </button>
         </div>
       </div>
 
@@ -197,7 +205,21 @@
 
       <!-- 7-Day Weekly Seed Momentum Heatmap Strip -->
       <div class="weekly-strip-wrap">
-        <span id="ui-weekly-momentum-title" class="weekly-strip-label">7-Day Seed Momentum</span>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span id="ui-weekly-momentum-title" class="weekly-strip-label">7-Day Seed Momentum</span>
+          <button id="btn-open-weekly-insights" type="button" class="mini-btn" style="border-color: var(--blue-400); color: var(--blue-400); font-size: 0.74rem;">
+            <span id="ui-weekly-insights-btn">📊 Weekly AI Insights</span>
+          </button>
+          <button id="btn-victory-card" type="button" class="mini-btn" style="border-color: var(--gold-border); color: #facc15; font-size: 0.74rem;">
+            <span id="ui-victory-card-btn">🎨 Victory Card</span>
+          </button>
+          <button id="btn-morning-briefing" type="button" class="mini-btn" style="border-color: rgba(16,185,129,0.5); color: var(--green-400); font-size: 0.74rem;">
+            <span id="ui-morning-briefing-btn">☀️ Morning Briefing</span>
+          </button>
+          <button id="btn-evening-muhasabah" type="button" class="mini-btn" style="border-color: rgba(168,85,247,0.5); color: #c084fc; font-size: 0.74rem;">
+            <span id="ui-evening-muhasabah-btn">🌙 Evening Review</span>
+          </button>
+        </div>
         <div id="weekly-momentum-strip" class="weekly-strip-days"></div>
       </div>
 
@@ -390,6 +412,9 @@
           </div>
         </div>
 
+        <!-- Live Local Prayer Times & Smart Schedule Sync Widget -->
+        <div id="prayer-times-widget" class="prayer-times-card"></div>
+
         <!-- Add Schedule Event Form -->
         <form id="form-add-event" style="margin: 16px 0; padding: 14px; background: var(--bg-input); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
           <h4 id="ui-add-event-title" style="font-size: 0.9rem; margin-bottom: 10px;">Schedule a Habit or Family Gathering</h4>
@@ -433,6 +458,10 @@
             <strong id="squad-code-display" style="font-size: 1rem; color: var(--green-400); margin-inline-start: 6px;">NAWWA-77</strong>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button id="btn-whatsapp-squad" class="btn-primary" type="button" style="padding: 8px 13px; font-size: 0.82rem;">
+              <span>📲</span>
+              <span id="ui-whatsapp-invite">WhatsApp Invite</span>
+            </button>
             <button id="btn-copy-squad" class="btn-secondary" type="button">
               <span>📋</span>
               <span id="ui-copy-code">Copy Invite</span>
@@ -491,6 +520,10 @@
             <button id="btn-export-backup" class="btn-secondary" type="button">
               💾 <span id="ui-export-backup">Export Backup</span>
             </button>
+            <button id="btn-import-backup" class="btn-secondary" type="button">
+              📥 <span id="ui-import-backup">Import Backup</span>
+            </button>
+            <input id="input-import-backup" type="file" accept=".json,application/json" class="hidden" />
             <button id="btn-logout" class="btn-secondary" type="button" style="border-color: #fb7185; color: #fb7185;">
               🚪 <span id="ui-logout-btn">Log Out</span>
             </button>
@@ -546,6 +579,21 @@
             Registered Users Directory
           </h4>
           <div id="admin-users-list"></div>
+
+          <!-- Optional Permanent Cloud Database (Supabase REST) Config -->
+          <details style="margin-top: 16px; padding: 12px; background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
+            <summary style="cursor: pointer; font-size: 0.84rem; font-weight: 800; color: var(--blue-400);">
+              ☁️ Permanent Cloud Database Sync (Supabase REST / Multi-Device Config)
+            </summary>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 8px 0;">
+              Optional: Connect a Supabase project (`nawwa_squads` table) so user accounts & Squad scores persist permanently across all phones.
+            </p>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <input id="input-supabase-url" type="url" class="text-input" placeholder="https://xyz.supabase.co" style="flex: 1; min-width: 180px;" />
+              <input id="input-supabase-key" type="password" class="text-input" placeholder="Supabase anon/service key" style="flex: 1; min-width: 180px;" />
+              <button id="btn-save-cloud-config" type="button" class="btn-primary" style="padding: 8px 14px; font-size: 0.82rem;">Save & Sync</button>
+            </div>
+          </details>
         </div>
       </div>
     </section>
@@ -876,6 +924,212 @@
             🔄 <span id="ui-cards-restart-btn">New Shuffle</span>
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: HOLY QURAN MUSHAF READER & AUDIO RECITATION -->
+  <div id="quran-reader-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-box quran-reader-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+        <div>
+          <h3 id="ui-quran-modal-title" style="font-size: 1.12rem; font-weight: 800; color: #facc15;">
+            📖 Holy Quran Mushaf & Audio Recitation
+          </h3>
+          <div id="quran-page-meta" style="font-size: 0.82rem; color: var(--text-muted); font-weight: 700; margin-top: 2px;">
+            Page 1 of 604
+          </div>
+        </div>
+        <button id="btn-close-quran-reader" class="icon-btn" type="button">✕</button>
+      </div>
+
+      <!-- Top Controls: Page Navigation + Audio Recitation + Translation Toggle -->
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button id="btn-quran-prev" type="button" class="mini-btn">◀</button>
+          <input id="quran-page-input" type="number" min="1" max="604" value="1" class="text-input" style="width: 72px; text-align: center; padding: 5px 6px; font-weight: 800;" />
+          <span style="font-size: 0.78rem; color: var(--text-muted);">/ 604</span>
+          <button id="btn-quran-next" type="button" class="mini-btn">▶</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <button id="btn-quran-audio-toggle" type="button" class="icon-btn" style="font-size: 0.78rem;">
+            🎧 Listen Aloud (Alafasy)
+          </button>
+          <button id="btn-quran-toggle-trans" type="button" class="icon-btn" style="font-size: 0.78rem;">
+            🌐 English Meaning
+          </button>
+        </div>
+      </div>
+
+      <!-- Mushaf Page Text & Ayahs -->
+      <div id="quran-mushaf-content" class="quran-mushaf-page"></div>
+
+      <!-- Complete Page Action -->
+      <button id="btn-quran-complete-page" type="button" class="btn-primary" style="width: 100%; padding: 12px; font-size: 0.95rem;">
+        <span id="ui-quran-complete-page-btn">✓ Completed Reading This Page (+10 pts)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 7: WEEKLY GROWTH & AI INSIGHTS -->
+  <div id="weekly-insights-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-box" style="max-width: 560px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 id="ui-insights-modal-title" style="font-size: 1.12rem; font-weight: 800; color: var(--blue-400);">
+          📊 Weekly Seed Harvest & AI Coach Insights
+        </h3>
+        <button id="btn-close-weekly-insights" class="icon-btn" type="button">✕</button>
+      </div>
+
+      <div id="weekly-insights-content"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+        <button id="btn-listen-weekly-insights" type="button" class="btn-primary">
+          <span id="ui-listen-insights-btn">🔊 Listen to Coach Summary</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 8: ACCOUNT SWITCHER & PROFILE EDITOR -->
+  <div id="onboarding-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-box" style="max-width: 500px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 id="ui-account-modal-title" style="font-size: 1.08rem; font-weight: 800;">
+          🔑 Switch Account or Edit Profile
+        </h3>
+        <button id="btn-close-onboarding" class="icon-btn" type="button">✕</button>
+      </div>
+
+      <p id="onboarding-subtitle" style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 12px;">
+        Update your active profile details or switch to another registered user account (each account keeps its own isolated habits, points, and Quran progress):
+      </p>
+
+      <!-- Quick Switch Registered Accounts -->
+      <div style="margin-bottom: 14px;">
+        <label id="ui-quick-switch-label" style="font-size: 0.8rem; font-weight: 700; color: var(--green-400); display: block; margin-bottom: 6px;">
+          Quick Switch Registered Accounts (Isolated Progress):
+        </label>
+        <div id="account-quick-switch-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
+      </div>
+
+      <form id="form-onboarding" style="display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+        <input id="ob-name" type="text" class="text-input" placeholder="Your Name" required />
+        <input id="ob-email" type="email" class="text-input" placeholder="Email Address" required />
+        <button type="submit" class="btn-primary" style="margin-top: 4px;">
+          <span id="ui-onboarding-submit">🚀 Save Profile Changes</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 9: INTERACTIVE ADHKAR & SMART TASBIH COUNTER -->
+  <div id="adhkar-tasbih-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-box" style="max-width: 580px; max-height: 92vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+        <div>
+          <h3 id="ui-adhkar-modal-title" style="font-size: 1.12rem; font-weight: 800; color: var(--green-400);">
+            📿 Interactive Adhkar & Smart Tasbih
+          </h3>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="adhkar-session-total" class="admin-badge" style="background: rgba(16,185,129,0.18); color: var(--green-400); border-color: var(--green-400);">
+            📿 Taps: 0
+          </span>
+          <button id="btn-close-adhkar-modal" class="icon-btn" type="button">✕</button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;">
+        <button type="button" class="btn-primary adhkar-tab-btn" data-adhkar-tab="morning" style="flex: 1; font-size: 0.8rem;">
+          🌅 الصباح / Morning
+        </button>
+        <button type="button" class="btn-secondary adhkar-tab-btn" data-adhkar-tab="evening" style="flex: 1; font-size: 0.8rem;">
+          🌇 المساء / Evening
+        </button>
+        <button type="button" class="btn-secondary adhkar-tab-btn" data-adhkar-tab="tasbih" style="flex: 1; font-size: 0.8rem;">
+          📿 سبحة واستغفار / Tasbih
+        </button>
+      </div>
+
+      <div id="adhkar-cards-container"></div>
+
+      <button id="btn-adhkar-claim-win" type="button" class="btn-primary" style="width: 100%; padding: 12px; margin-top: 6px;">
+        ✓ Complete Adhkar Habit & Claim Points (+25 pts)
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 10: DEEP FOCUS POMODORO TIMER & SOUNDSCAPE -->
+  <div id="focus-timer-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-box" style="max-width: 500px; text-align: center;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 id="ui-focus-modal-title" style="font-size: 1.12rem; font-weight: 800; color: var(--blue-400);">
+          ⏱️ Deep Focus Pomodoro & Soundscape
+        </h3>
+        <button id="btn-close-focus-timer" class="icon-btn" type="button">✕</button>
+      </div>
+
+      <!-- Duration Presets -->
+      <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px;">
+        <button type="button" class="btn-secondary focus-preset-btn" data-mins="2" style="font-size: 0.78rem; padding: 7px 10px;">
+          ⚡ 2m Micro-Start
+        </button>
+        <button type="button" class="btn-secondary focus-preset-btn" data-mins="15" style="font-size: 0.78rem; padding: 7px 10px;">
+          🥉 15m Bronze
+        </button>
+        <button type="button" class="btn-primary focus-preset-btn" data-mins="25" style="font-size: 0.78rem; padding: 7px 10px;">
+          🥈 25m Pomodoro
+        </button>
+        <button type="button" class="btn-secondary focus-preset-btn" data-mins="45" style="font-size: 0.78rem; padding: 7px 10px;">
+          🥇 45m Deep Work
+        </button>
+      </div>
+
+      <input id="focus-session-task-input" type="text" class="text-input" style="width: 100%; text-align: center; margin-bottom: 14px;" placeholder="What single task are you focusing on right now?" />
+
+      <!-- Big Timer Display -->
+      <div style="padding: 22px 16px; background: var(--gradient-surface); border: 1.5px solid var(--blue-400); border-radius: var(--radius-lg); margin-bottom: 14px;">
+        <div id="focus-timer-status" style="font-size: 0.8rem; font-weight: 800; color: var(--green-400); margin-bottom: 4px;">
+          25 mins (SILVER • +25 pts)
+        </div>
+        <div id="focus-timer-digits" style="font-size: 3.2rem; font-weight: 900; letter-spacing: 0.04em; color: var(--text-main); line-height: 1.15;">
+          25:00
+        </div>
+        <div class="progress-track" style="margin-top: 12px; height: 8px;">
+          <div id="focus-timer-progress-fill" class="progress-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- Synthesized Ambient Focus Soundscape Selector -->
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+          🎧 Focus Soundscape (Web Audio Synthesized):
+        </div>
+        <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
+          <button type="button" class="icon-btn focus-sound-btn active-toggle" data-sound="off">
+            🔇 Silent
+          </button>
+          <button type="button" class="icon-btn focus-sound-btn" data-sound="rain">
+            🌧️ Calm Rain / Brown Noise
+          </button>
+          <button type="button" class="icon-btn focus-sound-btn" data-sound="binaural">
+            🧠 40Hz Focus Wave
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+        <button id="btn-focus-timer-toggle" type="button" class="btn-primary" style="flex: 1; padding: 12px;">
+          🚀 Start Focus Session
+        </button>
+        <button id="btn-focus-timer-reset" type="button" class="btn-secondary">
+          ↺ Reset
+        </button>
+        <button id="btn-focus-complete-early" type="button" class="btn-secondary" style="border-color: var(--green-400); color: var(--green-400);">
+          ✓ Done
+        </button>
       </div>
     </div>
   </div>

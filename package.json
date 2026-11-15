@@ -1,6 +1,12 @@
 {
   "name": "nawwa",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
-  "description": "Nawwa | نواة — Defeat procrastination and grow across your 6 pillars of life."
+  "type": "module",
+  "description": "Nawwa | نواة — Defeat procrastination and grow across your 6 pillars of life.",
+  "scripts": {
+    "start": "npx serve . -l 3000",
+    "dev": "npx serve . -l 3000",
+    "test": "node --test tests/nawwa.test.js"
+  }
 }

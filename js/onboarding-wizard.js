@@ -112,7 +112,7 @@ export const PILLAR_QUESTIONS = [
     }
   },
   {
-    pillarId: 'smoke',
+    pillarId: 'smoking',
     icon: '🚭',
     title: { en: 'Smoke-Free & Clean Lungs', ar: 'الإقلاع عن التدخين' },
     q1: {
@@ -352,6 +352,12 @@ export function saveAndApplyPersonalization() {
   const st = appGetState();
   const isAr = st.lang === 'ar';
 
+  // Normalize any legacy 'smoke' id to 'smoking'
+  selectedPillarIds = selectedPillarIds.map((id) => (id === 'smoke' ? 'smoking' : id));
+  if (wizardAnswers.smoke && !wizardAnswers.smoking) {
+    wizardAnswers.smoking = wizardAnswers.smoke;
+  }
+
   if (!selectedPillarIds.length) {
     selectedPillarIds = ['faith', 'focus'];
   }
@@ -361,10 +367,24 @@ export function saveAndApplyPersonalization() {
   st.pillars.forEach((pillar) => {
     pillar.active = selectedPillarIds.includes(pillar.id);
 
-    // If active and user selected specific goals, tailor the tracker values!
+    // If active and user selected specific goals, tailor the tracker values & habits!
     if (pillar.active && wizardAnswers[pillar.id]) {
       const ans = wizardAnswers[pillar.id];
       const pConfig = PILLAR_QUESTIONS.find((p) => p.pillarId === pillar.id);
+
+      // Apply Q1 focus prioritization (e.g. reorder faith habits so primary focus is first)
+      if (pConfig && pConfig.q1 && pConfig.q1.options[ans.q1]) {
+        const chosenQ1 = pConfig.q1.options[ans.q1];
+        if (pillar.id === 'faith' && Array.isArray(pillar.habits)) {
+          const targetHabitId =
+            chosenQ1.id === 'prayers'
+              ? 'faith_prayers'
+              : chosenQ1.id === 'adhkar'
+                ? 'faith_adhkar'
+                : 'faith_quran';
+          pillar.habits.sort((a, b) => (a.id === targetHabitId ? -1 : b.id === targetHabitId ? 1 : 0));
+        }
+      }
 
       if (pConfig && pConfig.q2 && pConfig.q2.options[ans.q2]) {
         const chosenOpt = pConfig.q2.options[ans.q2];
@@ -375,7 +395,10 @@ export function saveAndApplyPersonalization() {
           pillar.tracker.goal = chosenOpt.goal;
         }
         if (chosenOpt.unit && pillar.tracker) {
-          pillar.tracker.unit = { en: chosenOpt.unit, ar: chosenOpt.unit };
+          pillar.tracker.unit = {
+            en: chosenOpt.unit,
+            ar: chosenOpt.unit === 'steps' ? 'خطوة' : chosenOpt.unit === 'mins' ? 'دقيقة' : chosenOpt.unit
+          };
         }
       }
     }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nawwa-v11';
+const CACHE_NAME = 'nawwa-v14';
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,9 @@ const ASSETS = [
   './js/calendar-notifications.js',
   './js/brain-games.js',
   './js/onboarding-wizard.js',
+  './js/quran-prayer.js',
+  './js/focus-timer.js',
+  './js/cloud-sync.js',
   './js/app.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -34,6 +37,7 @@ self.addEventListener('activate', (event) => {
 
 // Network-first strategy so code updates load immediately
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
   event.respondWith(
     fetch(event.request)
       .then((res) => {

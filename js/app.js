@@ -24,6 +24,33 @@ import {
   openPersonalizationWizard,
   closePersonalizationWizard
 } from './onboarding-wizard.js';
+import {
+  initQuranAndPrayerModule,
+  openQuranReaderModal,
+  closeQuranReaderModal,
+  openAdhkarTasbihModal,
+  closeAdhkarTasbihModal,
+  renderPrayerTimesWidget,
+  getHijriDateInfo,
+  getNextPrayerSummary
+} from './quran-prayer.js';
+import {
+  initFocusTimerModule,
+  openFocusTimerModal,
+  closeFocusTimerModal
+} from './focus-timer.js';
+import {
+  saveUserProfileSnapshot,
+  loadUserProfileSnapshot,
+  pushCloudSquadSync,
+  initLiveSquadSync,
+  openWeeklyInsightsModal,
+  closeWeeklyInsightsModal,
+  speakWeeklyInsights,
+  shareViaWhatsApp,
+  getPlantStageInfo,
+  generateAndShareVictoryCard
+} from './cloud-sync.js';
 
 const STORAGE_KEY = 'better_me_state_v1';
 
@@ -39,7 +66,7 @@ const QURAN_TIER_PAGES = {
   gold: 20
 };
 
-function getTodayIso() {
+export function getTodayIso() {
   const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -106,13 +133,17 @@ function loadInitialState() {
         user: currentUser || parsed.user || { name: 'Karim', email: 'karim@nawwa.app', role: 'admin', onboarded: true },
         points: typeof parsed.points === 'number' ? parsed.points : (currentUser?.points || 285),
         streak: typeof parsed.streak === 'number' ? parsed.streak : (currentUser?.streak || 6),
+        streakShields: typeof parsed.streakShields === 'number' ? parsed.streakShields : 1,
+        cloudConfig: parsed.cloudConfig || { supabaseUrl: '', supabaseKey: '' },
         lastActiveDate: parsed.lastActiveDate || todayIso,
         history: parsed.history || buildDefaultHistory(),
+        gratitudeLog: Array.isArray(parsed.gratitudeLog) ? parsed.gratitudeLog : [],
         pillars: Array.isArray(parsed.pillars) && parsed.pillars.length ? parsed.pillars : structuredClone(DEFAULT_PILLARS),
         completedToday: parsed.completedToday || {},
         events: Array.isArray(parsed.events) ? parsed.events : structuredClone(DEFAULT_EVENTS),
         champions: parsed.champions || structuredClone(DEFAULT_CHAMPIONS),
-        chatHistory: Array.isArray(parsed.chatHistory) ? parsed.chatHistory : []
+        chatHistory: Array.isArray(parsed.chatHistory) ? parsed.chatHistory : [],
+        userProfiles: parsed.userProfiles || {}
       };
       return checkDailyRollover(st);
     }
@@ -135,17 +166,21 @@ function loadInitialState() {
     user: { name: 'Karim', email: 'karim@nawwa.app', role: 'admin', onboarded: true },
     points: 285,
     streak: 6,
+    streakShields: 1,
+    cloudConfig: { supabaseUrl: '', supabaseKey: '' },
     lastActiveDate: todayIso,
     history: buildDefaultHistory(),
+    gratitudeLog: [],
     pillars: structuredClone(DEFAULT_PILLARS),
     completedToday: {},
     events: structuredClone(DEFAULT_EVENTS),
     champions: structuredClone(DEFAULT_CHAMPIONS),
-    chatHistory: []
+    chatHistory: [],
+    userProfiles: {}
   };
 }
 
-function checkDailyRollover(st) {
+export function checkDailyRollover(st) {
   const todayIso = getTodayIso();
   if (st.lastActiveDate && st.lastActiveDate !== todayIso) {
     const prevCount = Object.keys(st.completedToday || {}).length;
@@ -153,6 +188,11 @@ function checkDailyRollover(st) {
     st.history[st.lastActiveDate] = prevCount;
     if (prevCount > 0) {
       st.streak = (st.streak || 0) + 1;
+    } else if ((st.streakShields || 0) > 0) {
+      // Streak Shield protects streak from resetting when a day had 0 completions
+      st.streakShields = Math.max(0, (st.streakShields || 1) - 1);
+    } else {
+      st.streak = 0;
     }
     st.completedToday = {};
     st.lowEnergyMode = false;
@@ -179,6 +219,7 @@ function saveState() {
         u.points = state.points;
         u.streak = state.streak;
       }
+      saveUserProfileSnapshot(state);
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (_) {}
@@ -431,6 +472,22 @@ function renderShellStrings() {
   setTxt('ui-daily-progress', t('dailyProgress'));
   setTxt('ui-weekly-momentum-title', t('weeklyMomentumTitle'));
 
+  // Living Nawwa Tree Evolution Badge & Streak Shield Count
+  const plantStage = getPlantStageInfo(state.points, state.lang);
+  setTxt('stat-plant-icon', plantStage.icon);
+  setTxt('stat-plant-label', plantStage.label);
+  const plantBadge = document.getElementById('stat-plant-stage');
+  if (plantBadge) {
+    plantBadge.title = plantStage.nextPts
+      ? state.lang === 'ar'
+        ? `المستوى القادم عند ${plantStage.nextPts} نقطة`
+        : `Next evolution at ${plantStage.nextPts} pts`
+      : state.lang === 'ar'
+      ? 'وصلت لأعلى مستوى تطور!'
+      : 'Max evolution reached!';
+  }
+  setTxt('stat-shields-count', `x${state.streakShields ?? 1}`);
+
   // Low-energy banner
   setTxt('ui-low-energy-status', state.lowEnergyMode ? t('lowEnergyActive') : t('lowEnergyPrompt'));
   setTxt('ui-low-energy-btn', state.lowEnergyMode ? t('restoreNormalMode') : t('switchLowEnergy'));
@@ -576,6 +633,21 @@ function renderShellStrings() {
   setTxt('ui-wizard-finish-btn', t('wizardFinishBtn'));
   setTxt('ui-profile-repersonalize', t('repersonalizeBtn'));
 
+  // Quran Reader, Weekly Insights & Account Modal Translations
+  setTxt('ui-quran-modal-title', t('quranModalTitle'));
+  setTxt('ui-quran-complete-page-btn', t('quranCompletePageBtn'));
+  setTxt('ui-adhkar-modal-title', t('adhkarModalTitle'));
+  setTxt('ui-focus-modal-title', t('focusModalTitle'));
+  setTxt('ui-whatsapp-invite', t('whatsappInviteBtn'));
+  setTxt('ui-import-backup', t('importBackupBtn'));
+  setTxt('ui-weekly-insights-btn', t('weeklyInsightsBtn'));
+  setTxt('ui-victory-card-btn', t('victoryCardBtn'));
+  setTxt('ui-morning-briefing-btn', t('morningBriefingBtn'));
+  setTxt('ui-evening-muhasabah-btn', t('eveningMuhasabahBtn'));
+  setTxt('ui-listen-insights-btn', t('listenInsightsBtn'));
+  setTxt('ui-account-modal-title', t('accountModalTitle'));
+  setTxt('ui-quick-switch-label', t('quickSwitchLabel'));
+
   // Update PWA mobile install controls and status
   updatePwaInstallUi();
 }
@@ -647,11 +719,33 @@ function renderAdminPanel() {
         <button type="button" class="mini-btn btn-copy-creds" data-creds="${escapeHtml(credsString)}" style="border-color:var(--gold-border); color:var(--text-main);">
           📋 ${escapeHtml(t('adminCopyCreds'))}
         </button>
+        <button type="button" class="mini-btn btn-wa-creds" data-user-name="${escapeHtml(user.name)}" data-user-email="${escapeHtml(user.email)}" data-user-pass="${escapeHtml(user.password)}" style="border-color:rgba(16,185,129,0.5); color:#34d399;">
+          ${escapeHtml(t('whatsappShareBtn'))}
+        </button>
         ${deleteBtnHtml}
       </div>
     `;
 
     list.appendChild(row);
+  });
+
+  const supaUrlInput = document.getElementById('input-supabase-url');
+  const supaKeyInput = document.getElementById('input-supabase-key');
+  if (supaUrlInput && state.cloudConfig) supaUrlInput.value = state.cloudConfig.supabaseUrl || '';
+  if (supaKeyInput && state.cloudConfig) supaKeyInput.value = state.cloudConfig.supabaseKey || '';
+
+  list.querySelectorAll('.btn-wa-creds').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const uName = btn.getAttribute('data-user-name') || '';
+      const uEmail = btn.getAttribute('data-user-email') || '';
+      const uPass = btn.getAttribute('data-user-pass') || '';
+      const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://nawwa.vercel.app';
+      const waMsg =
+        state.lang === 'ar'
+          ? `🌱 أهلاً بك يا ${uName} في تطبيق نَوَاة (Nawwa) لبناء العادات اليومية!\n\nبيانات الدخول الخاصة بك:\n📧 البريد: ${uEmail}\n🔑 كلمة المرور: ${uPass}\n🔗 كود الفريق: ${state.champions?.squadCode || 'GROW-2026'}\n🌐 رابط التطبيق: ${appUrl}`
+          : `🌱 Welcome to Nawwa (نواة), ${uName}!\n\nHere are your login credentials:\n📧 Email: ${uEmail}\n🔑 Password: ${uPass}\n🔗 Squad Code: ${state.champions?.squadCode || 'GROW-2026'}\n🌐 App Link: ${appUrl}`;
+      shareViaWhatsApp(waMsg);
+    });
   });
 
   list.querySelectorAll('.btn-copy-creds').forEach((btn) => {
@@ -807,6 +901,9 @@ function renderSpotlightAndFilter(activePillars) {
 
   const pick = uncompleted[spotlightIndex % uncompleted.length];
   const bronzeText = localText(pick.habit.tiers.bronze);
+  const isQuranHabit = pick.habit.id === 'faith_quran';
+  const isAdhkarHabit = pick.habit.id === 'faith_adhkar';
+  const isFocusPillar = pick.pillar.id === 'focus';
 
   spotEl.innerHTML = `
     <div style="flex: 1; min-width: 210px;">
@@ -821,6 +918,27 @@ function renderSpotlightAndFilter(activePillars) {
       </div>
     </div>
     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      ${
+        isQuranHabit
+          ? `<button type="button" id="btn-spotlight-quran" class="btn-secondary" style="padding: 8px 12px; font-size: 0.8rem; border-color: var(--gold-border); color: #facc15;">
+               ${escapeHtml(t('openQuranReaderBtn'))}
+             </button>`
+          : ''
+      }
+      ${
+        isAdhkarHabit
+          ? `<button type="button" id="btn-spotlight-adhkar" class="btn-secondary" style="padding: 8px 12px; font-size: 0.8rem; border-color: rgba(16,185,129,0.5); color: var(--green-400);">
+               ${escapeHtml(t('openAdhkarBtn'))}
+             </button>`
+          : ''
+      }
+      ${
+        isFocusPillar
+          ? `<button type="button" id="btn-spotlight-focus" class="btn-secondary" style="padding: 8px 12px; font-size: 0.8rem; border-color: rgba(56,189,248,0.5); color: var(--blue-400);">
+               ${escapeHtml(t('openFocusTimerBtn'))}
+             </button>`
+          : ''
+      }
       <button type="button" id="btn-spotlight-do" class="btn-primary" style="padding: 8px 14px; font-size: 0.82rem;">
         ${escapeHtml(t('spotlightDoBtn'))}
       </button>
@@ -829,6 +947,18 @@ function renderSpotlightAndFilter(activePillars) {
       </button>
     </div>
   `;
+
+  spotEl.querySelector('#btn-spotlight-quran')?.addEventListener('click', () => {
+    openQuranReaderModal();
+  });
+
+  spotEl.querySelector('#btn-spotlight-adhkar')?.addEventListener('click', () => {
+    openAdhkarTasbihModal('morning');
+  });
+
+  spotEl.querySelector('#btn-spotlight-focus')?.addEventListener('click', () => {
+    openFocusTimerModal(25);
+  });
 
   spotEl.querySelector('#btn-spotlight-do')?.addEventListener('click', () => {
     handleSelectHabitTier(pick.pillar, pick.habit, 'bronze');
@@ -942,6 +1072,14 @@ function renderPillars() {
             : ` (~$${(tracker.value * 0.5).toFixed(2)} saved!)`
           : '';
 
+      const quranReaderBtnHtml =
+        pillar.id === 'faith'
+          ? `<button type="button" class="mini-btn" data-action="open-quran" style="border-color: var(--gold-border); color: #facc15;">${escapeHtml(t('openQuranReaderBtn'))}</button>
+             <button type="button" class="mini-btn" data-action="open-adhkar" style="border-color: rgba(16,185,129,0.5); color: var(--green-400);">${escapeHtml(t('openAdhkarBtn'))}</button>`
+          : pillar.id === 'focus'
+          ? `<button type="button" class="mini-btn" data-action="open-focus-timer" style="border-color: rgba(56,189,248,0.5); color: var(--blue-400);">${escapeHtml(t('openFocusTimerBtn'))}</button>`
+          : '';
+
       const trackerDiv = document.createElement('div');
       trackerDiv.className = 'mini-tracker';
       trackerDiv.innerHTML = `
@@ -950,10 +1088,24 @@ function renderPillars() {
           <span class="tracker-value"> ${tracker.value} / ${tracker.goal} ${escapeHtml(localText(tracker.unit))}${escapeHtml(extraInfo)}</span>
         </div>
         <div class="tracker-controls">
+          ${quranReaderBtnHtml}
           <button type="button" class="mini-btn" data-action="dec">− ${tracker.step}</button>
           <button type="button" class="mini-btn" data-action="inc">+ ${tracker.step}</button>
         </div>
       `;
+
+      trackerDiv.querySelector('[data-action="open-quran"]')?.addEventListener('click', () => {
+        openQuranReaderModal();
+      });
+
+      trackerDiv.querySelector('[data-action="open-adhkar"]')?.addEventListener('click', () => {
+        const hour = new Date().getHours();
+        openAdhkarTasbihModal(hour >= 15 ? 'evening' : 'morning');
+      });
+
+      trackerDiv.querySelector('[data-action="open-focus-timer"]')?.addEventListener('click', () => {
+        openFocusTimerModal(25);
+      });
 
       trackerDiv.querySelector('[data-action="dec"]').addEventListener('click', () => {
         tracker.value = Math.max(0, tracker.value - tracker.step);
@@ -1014,6 +1166,7 @@ function handleSelectHabitTier(pillar, habit, tierKey) {
 
   playTierSound(tierKey);
   saveState();
+  pushCloudSquadSync(state);
   renderShellStrings();
   renderPillars();
   renderLeaderboard();
@@ -1147,6 +1300,12 @@ async function handleUserChatMessage(userText) {
         );
       } else if (act.type === 'OPEN_SOS') {
         setTimeout(() => openSosModal(act.tab || 'urge'), 800);
+      } else if (act.type === 'OPEN_QURAN') {
+        setTimeout(() => openQuranReaderModal(), 600);
+      } else if (act.type === 'OPEN_ADHKAR') {
+        setTimeout(() => openAdhkarTasbihModal('morning'), 600);
+      } else if (act.type === 'OPEN_FOCUS_TIMER') {
+        setTimeout(() => openFocusTimerModal(25), 600);
       } else if (act.type === 'COMPLETE_HABIT') {
         state.pillars.forEach((p) => {
           const found = p.habits.find((h) => h.id === act.habitId);
@@ -1198,6 +1357,8 @@ async function handleUserChatMessage(userText) {
 
 // Render Smart Calendar & Notifications
 function renderCalendar() {
+  renderPrayerTimesWidget();
+
   const listEl = document.getElementById('calendar-events-list');
   if (!listEl) return;
   listEl.innerHTML = '';
@@ -1277,9 +1438,15 @@ function renderLeaderboard() {
     let actionBtnHtml = '';
     if (!member.isMe) {
       if (!member.checkedInToday) {
-        actionBtnHtml = `<button type="button" class="mini-btn" data-peer="nudge" style="border-color: #fb923c; color: #fb923c;">${escapeHtml(t('nudgeBtn'))}</button>`;
+        actionBtnHtml = `
+          <button type="button" class="mini-btn" data-peer="nudge" style="border-color: #fb923c; color: #fb923c;">${escapeHtml(t('nudgeBtn'))}</button>
+          <button type="button" class="mini-btn" data-wa-peer="nudge" title="WhatsApp Nudge" style="border-color: rgba(16,185,129,0.45); color: #34d399;">📲</button>
+        `;
       } else {
-        actionBtnHtml = `<button type="button" class="mini-btn" data-peer="cheer" style="border-color: var(--green-400); color: var(--green-400);">${escapeHtml(t('cheerBtn'))}</button>`;
+        actionBtnHtml = `
+          <button type="button" class="mini-btn" data-peer="cheer" style="border-color: var(--green-400); color: var(--green-400);">${escapeHtml(t('cheerBtn'))}</button>
+          <button type="button" class="mini-btn" data-wa-peer="cheer" title="WhatsApp Cheer" style="border-color: rgba(16,185,129,0.45); color: #34d399;">📲</button>
+        `;
       }
     }
 
@@ -1293,11 +1460,28 @@ function renderLeaderboard() {
           <div>${statusLine} • 🔥 ${Number(member.streak) || 0}d</div>
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
         <strong style="color: var(--blue-400); font-size: 0.95rem;">${Number(member.points) || 0} ${escapeHtml(t('pointsLabel'))}</strong>
         ${actionBtnHtml}
       </div>
     `;
+
+    const waPeerBtn = row.querySelector('[data-wa-peer]');
+    if (waPeerBtn) {
+      waPeerBtn.addEventListener('click', () => {
+        const isNudge = waPeerBtn.getAttribute('data-wa-peer') === 'nudge';
+        const friendName = localText(member.name);
+        const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://nawwa.vercel.app';
+        const waText = isNudge
+          ? state.lang === 'ar'
+            ? `🌱 يلا يا ${friendName}! لا تكسر السلسلة اليوم في فريق نَوَاة (${state.champions?.squadCode || 'GROW-2026'}) — ادخل وازرع ولو خطوة برونزية في دقيقتين! 🔥\n${appUrl}`
+            : `🌱 Hey ${friendName}! Don't break the chain today in our Nawwa Squad (${state.champions?.squadCode || 'GROW-2026'}) — hop in and plant a 2-minute Bronze seed! 🔥\n${appUrl}`
+          : state.lang === 'ar'
+          ? `👏 عاش يا ${friendName}! فخور بالتزامك اليوم في فريق نَوَاة (${member.points} نقطة • 🔥 ${member.streak} يوم)! استمر يا بطل 🌱`
+          : `👏 Awesome job ${friendName}! Crushing it in our Nawwa Squad today (${member.points} pts • 🔥 ${member.streak}d streak)! Keep growing 🌱`;
+        shareViaWhatsApp(waText);
+      });
+    }
 
     const peerBtn = row.querySelector('[data-peer]');
     if (peerBtn) {
@@ -1316,6 +1500,11 @@ function renderLeaderboard() {
           showToast(`🔔 ${msg}`);
           speakText(msg, state.lang, state.voiceEnabled, null, null, state.voiceSettings);
           saveState();
+          pushCloudSquadSync(state, {
+            action: 'nudge',
+            fromName: state.user.name,
+            targetName: friendName
+          });
           renderShellStrings();
           renderLeaderboard();
         } else {
@@ -1325,6 +1514,11 @@ function renderLeaderboard() {
               : `Sent a high-five & cheer to ${friendName} for staying consistent!`;
           playTierSound('silver');
           showToast(`👏 ${msg}`);
+          pushCloudSquadSync(state, {
+            action: 'cheer',
+            fromName: state.user.name,
+            targetName: friendName
+          });
         }
       });
     }
@@ -1928,6 +2122,9 @@ function initEvents() {
 
     if (errBox) errBox.classList.add('hidden');
 
+    // Save previous user's snapshot before switching
+    saveUserProfileSnapshot(state);
+
     state.isAuthenticated = true;
     state.currentUser = foundUser;
     state.user = {
@@ -1936,14 +2133,10 @@ function initEvents() {
       role: foundUser.role,
       onboarded: true
     };
-    if (typeof foundUser.points === 'number') {
-      state.points = foundUser.points;
-    }
-    if (typeof foundUser.streak === 'number') {
-      state.streak = foundUser.streak;
-    }
+    loadUserProfileSnapshot(state, foundUser);
 
     saveState();
+    pushCloudSquadSync(state);
     renderAll();
 
     showToast(
@@ -2060,6 +2253,7 @@ function initEvents() {
     }
 
     saveState();
+    pushCloudSquadSync(state);
     renderAdminPanel();
     renderLeaderboard();
 
@@ -2074,7 +2268,7 @@ function initEvents() {
     );
   });
 
-  // Onboarding / Account Modal & Backup Export
+  // Onboarding / Account Modal & Backup Export + Import Restore
   document.getElementById('btn-export-backup')?.addEventListener('click', () => {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -2092,9 +2286,142 @@ function initEvents() {
     );
   });
 
+  document.getElementById('btn-import-backup')?.addEventListener('click', () => {
+    document.getElementById('input-import-backup')?.click();
+  });
+
+  document.getElementById('input-import-backup')?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const imported = JSON.parse(String(ev.target?.result || '{}'));
+        if (!imported || typeof imported !== 'object' || (!imported.pillars && !imported.users)) {
+          showToast(
+            state.lang === 'ar'
+              ? '⚠️ ملف النسخة الاحتياطية غير صالح!'
+              : '⚠️ Invalid Nawwa backup JSON file!'
+          );
+          return;
+        }
+        state = {
+          ...state,
+          ...imported,
+          streakShields: typeof imported.streakShields === 'number' ? imported.streakShields : (state.streakShields ?? 1),
+          cloudConfig: imported.cloudConfig || state.cloudConfig || { supabaseUrl: '', supabaseKey: '' }
+        };
+        saveState();
+        renderAll();
+        launchConfetti();
+        showToast(
+          state.lang === 'ar'
+            ? '📥 تم استعادة النسخة الاحتياطية وجميع إنجازاتك بنجاح!'
+            : '📥 Backup restored successfully with all your progress!'
+        );
+      } catch (_) {
+        showToast(
+          state.lang === 'ar'
+            ? '⚠️ تعذر قراءة ملف النسخة الاحتياطية!'
+            : '⚠️ Could not parse backup JSON file!'
+        );
+      } finally {
+        e.target.value = '';
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // Streak Shield Purchase / Activation (50 pts -> +1 Shield)
+  document.getElementById('btn-streak-shield')?.addEventListener('click', () => {
+    const currentShields = state.streakShields ?? 1;
+    if (state.points < 50) {
+      showToast(
+        state.lang === 'ar'
+          ? `🛡️ لديك (${currentShields}) درع حماية للسلسلة. تحتاج 50 نقطة لشراء درع إضافي!`
+          : `🛡️ You have (${currentShields}) Streak Shield(s). Need 50 pts to craft an extra shield!`
+      );
+      return;
+    }
+    state.points -= 50;
+    state.streakShields = currentShields + 1;
+    playTierSound('silver');
+    saveState();
+    renderShellStrings();
+    renderLeaderboard();
+    showToast(
+      state.lang === 'ar'
+        ? `🛡️ تم تفعيل درع حماية إضافي للسلسلة! (إجمالي الدروع: ${state.streakShields})`
+        : `🛡️ Extra Streak Shield crafted! (Total Shields: ${state.streakShields} — protects your streak if you miss a day)`
+    );
+  });
+
+  // 1-Tap WhatsApp Squad Invite
+  document.getElementById('btn-whatsapp-squad')?.addEventListener('click', () => {
+    const code = state.champions?.squadCode || 'GROW-2026';
+    const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://nawwa.vercel.app';
+    const msg =
+      state.lang === 'ar'
+        ? `🌱 انضم إلى فريقي في تطبيق نَوَاة (Nawwa) لبناء العادات اليومية والتنافس الإيجابي!\n\n🔗 كود الفريق: ${code}\n🌐 رابط التطبيق: ${appUrl}`
+        : `🌱 Join my accountability squad on Nawwa (نواة) for daily habit building & friendly competition!\n\n🔗 Squad Code: ${code}\n🌐 App Link: ${appUrl}`;
+    shareViaWhatsApp(msg);
+  });
+
+  // Admin Permanent Cloud Storage (Supabase REST) Save Handler
+  document.getElementById('btn-save-cloud-config')?.addEventListener('click', () => {
+    const supaUrl = document.getElementById('input-supabase-url')?.value.trim() || '';
+    const supaKey = document.getElementById('input-supabase-key')?.value.trim() || '';
+    state.cloudConfig = { supabaseUrl: supaUrl, supabaseKey: supaKey };
+    saveState();
+    pushCloudSquadSync(state);
+    showToast(
+      state.lang === 'ar'
+        ? '☁️ تم حفظ إعدادات التخزين السحابي الدائم (Supabase) ومزامنة الفريق!'
+        : '☁️ Saved permanent Cloud Storage (Supabase) settings & synced squad!'
+    );
+  });
+
   document.getElementById('btn-open-onboarding')?.addEventListener('click', () => {
-    document.getElementById('ob-name').value = state.user.name;
-    document.getElementById('ob-email').value = state.user.email;
+    const obName = document.getElementById('ob-name');
+    const obEmail = document.getElementById('ob-email');
+    if (obName) obName.value = state.user.name;
+    if (obEmail) obEmail.value = state.user.email;
+
+    // Render quick account switcher list
+    const switchList = document.getElementById('account-quick-switch-list');
+    if (switchList) {
+      switchList.innerHTML = '';
+      (state.users || []).forEach((u) => {
+        const isCurrent = state.currentUser && (state.currentUser.id === u.id || state.currentUser.email === u.email);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `wizard-opt-btn ${isCurrent ? 'selected' : ''}`;
+        btn.style.display = 'flex';
+        btn.style.justifyContent = 'space-between';
+        btn.style.alignItems = 'center';
+        btn.innerHTML = `
+          <span>${u.role === 'admin' ? '👑' : '🌱'} <strong>${escapeHtml(u.name)}</strong> (${escapeHtml(u.email)})</span>
+          <span style="font-size:0.78rem; color:var(--blue-400);">${Number(u.points) || 0} pts • 🔥 ${Number(u.streak) || 0}d</span>
+        `;
+        btn.addEventListener('click', () => {
+          saveUserProfileSnapshot(state);
+          state.isAuthenticated = true;
+          state.currentUser = u;
+          state.user = { name: u.name, email: u.email, role: u.role, onboarded: true };
+          loadUserProfileSnapshot(state, u);
+          saveState();
+          document.getElementById('onboarding-modal')?.classList.add('hidden');
+          renderAll();
+          showToast(
+            state.lang === 'ar'
+              ? `🔄 تم التبديل إلى حساب (${u.name}) ببياناته المستقلة!`
+              : `🔄 Switched to (${u.name}) with isolated profile progress!`
+          );
+        });
+        switchList.appendChild(btn);
+      });
+    }
+
     renderPillarSelectors();
     document.getElementById('onboarding-modal')?.classList.remove('hidden');
   });
@@ -2103,18 +2430,8 @@ function initEvents() {
     document.getElementById('onboarding-modal')?.classList.add('hidden');
   });
 
-  document.getElementById('btn-fill-demo')?.addEventListener('click', () => {
-    document.getElementById('ob-name').value = 'Karim';
-    document.getElementById('ob-email').value = 'karim@nawwa.app';
-    document.getElementById('ob-password').value = 'Nawwa2026!';
-    showToast(
-      state.lang === 'ar'
-        ? '⚡ تم ملء بيانات الدخول التجريبية!'
-        : '⚡ Filled default demo credentials!'
-    );
-  });
-
   document.getElementById('btn-logout')?.addEventListener('click', () => {
+    saveUserProfileSnapshot(state);
     state.isAuthenticated = false;
     state.currentUser = null;
     saveState();
@@ -2128,8 +2445,10 @@ function initEvents() {
 
   document.getElementById('form-onboarding')?.addEventListener('submit', (e) => {
     e.preventDefault();
-    const nameVal = document.getElementById('ob-name').value.trim() || 'Karim';
-    const emailVal = document.getElementById('ob-email').value.trim() || 'karim@nawwa.app';
+    const obName = document.getElementById('ob-name');
+    const obEmail = document.getElementById('ob-email');
+    const nameVal = obName?.value.trim() || 'Karim';
+    const emailVal = obEmail?.value.trim() || 'karim@nawwa.app';
     state.user = { name: nameVal, email: emailVal, role: state.user?.role || 'user', onboarded: true };
     if (state.currentUser) {
       state.currentUser.name = nameVal;
@@ -2140,9 +2459,77 @@ function initEvents() {
     renderAll();
     showToast(
       state.lang === 'ar'
-        ? `مرحباً بك يا ${nameVal}! رحلتك في نَوَاة بدأت الآن.`
-        : `Welcome, ${nameVal}! Your Nawwa journey is synced.`
+        ? `مرحباً بك يا ${nameVal}! تم تحديث ملفك الشخصي.`
+        : `Welcome, ${nameVal}! Your profile is updated.`
     );
+  });
+
+  // Weekly AI Insights Modal, Victory Card & Guided Voice Rituals Handlers
+  document.getElementById('btn-open-weekly-insights')?.addEventListener('click', openWeeklyInsightsModal);
+  document.getElementById('btn-close-weekly-insights')?.addEventListener('click', closeWeeklyInsightsModal);
+  document.getElementById('btn-listen-weekly-insights')?.addEventListener('click', () => {
+    speakWeeklyInsights(state);
+  });
+
+  document.getElementById('btn-victory-card')?.addEventListener('click', () => {
+    generateAndShareVictoryCard(state, showToast);
+  });
+
+  document.getElementById('btn-morning-briefing')?.addEventListener('click', () => {
+    unlockAudio();
+    const isAr = state.lang === 'ar';
+    const hijri = getHijriDateInfo(state.lang);
+    const nextPrayer = getNextPrayerSummary(state.lang);
+    const plant = getPlantStageInfo(state.points, state.lang);
+
+    // Find first uncompleted Bronze seed
+    let firstBronzeSeed = isAr ? 'قراءة صفحة واحدة من القرآن الكريم' : 'Read 1 page of the Holy Quran';
+    for (const p of state.pillars || []) {
+      if (!p.active) continue;
+      for (const h of p.habits || []) {
+        if (!state.completedToday?.[h.id]) {
+          firstBronzeSeed = localText(h.tiers.bronze);
+          break;
+        }
+      }
+    }
+
+    const briefingText = isAr
+      ? `☀️ إشراقة الصباح يا ${state.user.name}! اليوم هو ${hijri.label}. أنت الآن في مرحلة (${plant.label}) بسلسلة التزام ${state.streak} يوم. الصلاة القادمة هي ${nextPrayer.name} الساعة ${nextPrayer.time}. نصيحتي لك لتبدأ يومك ببركة ودون تشتت: ابدأ الآن بخطوة الدقيقتين البرونزية وهي: (${firstBronzeSeed}). توكل على الله!`
+      : `☀️ Good morning, ${state.user.name}! Today is ${hijri.label}. You are at stage (${plant.label}) with a ${state.streak}-day streak. Next prayer is ${nextPrayer.name} at ${nextPrayer.time}. To build instant momentum without overwhelm, start with this 2-minute Bronze seed right now: (${firstBronzeSeed}). Let's grow!`;
+
+    state.chatHistory.push({ sender: 'coach', text: briefingText });
+    saveState();
+    renderCoachSection();
+    showToast(briefingText);
+    speakText(briefingText, state.lang, true, null, null, state.voiceSettings);
+  });
+
+  document.getElementById('btn-evening-muhasabah')?.addEventListener('click', () => {
+    unlockAudio();
+    const isAr = state.lang === 'ar';
+    const completedCount = Object.keys(state.completedToday || {}).length;
+    const plant = getPlantStageInfo(state.points, state.lang);
+
+    if (!state.completedToday?.['evening_muhasabah_bonus']) {
+      state.completedToday['evening_muhasabah_bonus'] = 'bronze';
+      state.points = (state.points || 0) + 5;
+    }
+
+    const reviewText =
+      completedCount > 0
+        ? isAr
+          ? `🌙 محاسبة المساء يا ${state.user.name}: بارك الله في جهدك اليوم! أتممت ${completedCount} عادات إيجابية، ووصل رصيدك إلى ${state.points} نقطة في مرحلة (${plant.label}). اختم يومك الآن بأذكار المساء أو اتصال دافئ بالعائلة، ونَم قرير العين (+٥ نقاط لمحاسبة النفس).`
+          : `🌙 Evening Reflection, ${state.user.name}: Well done today! You completed ${completedCount} positive habits and reached ${state.points} points (${plant.label}). Close your day peacefully with Evening Adhkar or a warm family check-in (+5 pts reflection bonus).`
+        : isAr
+        ? `🌙 محاسبة المساء يا ${state.user.name}: لم ينتهِ اليوم بعد! لا تنم قبل أن تزرع ولو بذرة برونزية واحدة في دقيقتين—مثل التسبيح أو قراءة صفحة من المصحف—لتحمي سلسلة التزامك (${state.streak} يوم)!`
+        : `🌙 Evening Reflection, ${state.user.name}: The day isn't over yet! Plant just one 2-minute Bronze seed before sleep—like Evening Adhkar or 1 Quran page—to protect your ${state.streak}-day streak!`;
+
+    state.chatHistory.push({ sender: 'coach', text: reviewText });
+    saveState();
+    renderAll();
+    showToast(reviewText);
+    speakText(reviewText, state.lang, true, null, null, state.voiceSettings);
   });
 
   // PWA Mobile Installation Event Handlers
@@ -2204,6 +2591,106 @@ function initEvents() {
     launchConfetti
   );
 
+  // Initialize In-App Quran Mushaf Reader & Local Prayer Times Auto-Sync
+  initQuranAndPrayerModule({
+    getState: () => state,
+    saveState,
+    renderAll,
+    showToast,
+    launchConfetti,
+    onCompleteQuranPage: (completedPageNum) => {
+      const faithPillar = state.pillars.find((p) => p.id === 'faith');
+      if (faithPillar) {
+        if (faithPillar.tracker) {
+          faithPillar.tracker.value = Math.min(604, Math.max(faithPillar.tracker.value + 1, completedPageNum));
+        }
+        const quranHabit = faithPillar.habits.find((h) => h.id === 'faith_quran');
+        if (quranHabit && !state.completedToday['faith_quran']) {
+          state.completedToday['faith_quran'] = 'bronze';
+          state.points += TIER_POINTS.bronze;
+        } else {
+          state.points += 10;
+        }
+      }
+      playTierSound('gold');
+      launchConfetti();
+      saveState();
+      pushCloudSquadSync(state);
+      renderAll();
+      const msg =
+        state.lang === 'ar'
+          ? `📖 تقبّل الله! أتممت قراءة الصفحة ${completedPageNum} من المصحف الشريف (+١٠ نقاط)`
+          : `📖 May Allah accept it! Completed Quran Mushaf Page ${completedPageNum} (+10 pts)`;
+      showToast(msg);
+    },
+    onCompleteAdhkar: (category) => {
+      const faithPillar = state.pillars.find((p) => p.id === 'faith');
+      const prevTier = state.completedToday['faith_adhkar'];
+      const targetTier = category === 'tasbih' ? 'silver' : 'gold';
+      if (faithPillar) {
+        if (prevTier) {
+          state.points = Math.max(0, state.points - (TIER_POINTS[prevTier] || 0));
+        }
+        state.completedToday['faith_adhkar'] = targetTier;
+        state.points += TIER_POINTS[targetTier] || 25;
+      } else {
+        state.points += 25;
+      }
+      playTierSound('gold');
+      launchConfetti();
+      saveState();
+      pushCloudSquadSync(state);
+      renderAll();
+      const msg =
+        state.lang === 'ar'
+          ? '📿 تقبّل الله ذكرك! تم تسجيل عادة الأذكار والتسبيح اليومية بنجاح.'
+          : '📿 May Allah accept your Dhikr! Marked your daily Adhkar habit complete.';
+      showToast(msg);
+    }
+  });
+
+  // Initialize Built-in Pomodoro & Focus Soundscapes Timer
+  initFocusTimerModule({
+    getState: () => state,
+    onCompleteFocusSession: (minutes) => {
+      const focusPillar = state.pillars.find((p) => p.id === 'focus');
+      const tierKey = minutes >= 45 ? 'gold' : minutes >= 15 ? 'silver' : 'bronze';
+      if (focusPillar) {
+        if (focusPillar.tracker) {
+          focusPillar.tracker.value = (focusPillar.tracker.value || 0) + minutes;
+        }
+        const prevTier = state.completedToday['focus_most_important'];
+        if (!prevTier || TIER_POINTS[tierKey] > TIER_POINTS[prevTier]) {
+          if (prevTier) state.points = Math.max(0, state.points - TIER_POINTS[prevTier]);
+          state.completedToday['focus_most_important'] = tierKey;
+          state.points += TIER_POINTS[tierKey];
+        } else {
+          state.points += 15;
+        }
+      } else {
+        state.points += 25;
+      }
+      playTierSound(tierKey);
+      launchConfetti();
+      saveState();
+      pushCloudSquadSync(state);
+      renderAll();
+      const msg =
+        state.lang === 'ar'
+          ? `⏱️ رائع! أتممت جلسة تركيز عميق لمدة ${minutes} دقيقة وتم تحديث ركن التركيز!`
+          : `⏱️ Awesome! Completed a ${minutes}-min Deep Work session & updated your Focus Pillar!`;
+      showToast(msg);
+    }
+  });
+
+  // Initialize Live Squad Sync (BroadcastChannel + /api/squad)
+  initLiveSquadSync({
+    getState: () => state,
+    saveState,
+    renderAll,
+    showToast
+  });
+
   document.getElementById('btn-profile-repersonalize')?.addEventListener('click', () => {
     openPersonalizationWizard();
   });
@@ -2215,6 +2702,10 @@ function initEvents() {
         if (backdrop.id === 'sos-modal') closeSosModal();
         else if (backdrop.id === 'brain-games-modal') closeBrainGamesModal();
         else if (backdrop.id === 'personalization-modal') closePersonalizationWizard();
+        else if (backdrop.id === 'quran-reader-modal') closeQuranReaderModal();
+        else if (backdrop.id === 'adhkar-tasbih-modal') closeAdhkarTasbihModal();
+        else if (backdrop.id === 'focus-timer-modal') closeFocusTimerModal();
+        else if (backdrop.id === 'weekly-insights-modal') closeWeeklyInsightsModal();
         else backdrop.classList.add('hidden');
       }
     });
@@ -2225,6 +2716,10 @@ function initEvents() {
       closeSosModal();
       closeBrainGamesModal();
       closePersonalizationWizard();
+      closeQuranReaderModal();
+      closeAdhkarTasbihModal();
+      closeFocusTimerModal();
+      closeWeeklyInsightsModal();
       document.getElementById('custom-pillar-modal')?.classList.add('hidden');
       document.getElementById('onboarding-modal')?.classList.add('hidden');
       document.getElementById('personalization-modal')?.classList.add('hidden');
